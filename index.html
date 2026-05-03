@@ -187,6 +187,7 @@
     <button onclick="showTab('clients')" data-tab="clients">Clients</button>
     <button onclick="showTab('upload')" data-tab="upload">Upload PDF</button>
     <button onclick="showTab('history')" data-tab="history">All Invoices</button>
+    <button onclick="showTab('settings')" data-tab="settings">Settings</button>
   </nav>
   <main>
 
@@ -247,7 +248,28 @@
       <div id="history-list"></div>
     </div>
 
-  </main>
+  
+    <!-- SETTINGS TAB -->
+    <div id="tab-settings" class="tab-content">
+      <div class="section-title">Change Password</div>
+      <div class="card" style="padding:1.25rem;max-width:400px;">
+        <div id="pw-change-alert"></div>
+        <div class="form-group">
+          <label>Current Password</label>
+          <input type="password" id="pw-old" placeholder="Enter current password" />
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input type="password" id="pw-new" placeholder="Enter new password (min 4 chars)" />
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input type="password" id="pw-confirm" placeholder="Repeat new password" />
+        </div>
+        <button class="btn-sm primary" style="width:100%;padding:0.65rem;" onclick="changePassword()">Update Password</button>
+      </div>
+    </div>
+</main>
 </div>
 
 <!-- MODAL: Configure Sub-client -->
@@ -1005,6 +1027,32 @@ function saveInvoice(subNum, coNum, auctionDate, grossSale, netPayout, myCommiss
   saveData();
   document.getElementById('upload-result').innerHTML = `<div class="alert alert-success" style="margin-top:1rem;">✅ Invoice saved! View it in History or Dashboard.</div>`;
   renderDashboard();
+}
+
+function changePassword() {
+  const oldPw = document.getElementById('pw-old').value;
+  const newPw = document.getElementById('pw-new').value;
+  const confirmPw = document.getElementById('pw-confirm').value;
+  const alertEl = document.getElementById('pw-change-alert');
+  const stored = localStorage.getItem(PASS_KEY);
+
+  if (oldPw !== stored) {
+    alertEl.innerHTML = '<div class="alert alert-error">Current password is incorrect.</div>';
+    return;
+  }
+  if (newPw.length < 4) {
+    alertEl.innerHTML = '<div class="alert alert-error">New password must be at least 4 characters.</div>';
+    return;
+  }
+  if (newPw !== confirmPw) {
+    alertEl.innerHTML = '<div class="alert alert-error">New passwords do not match.</div>';
+    return;
+  }
+  localStorage.setItem(PASS_KEY, newPw);
+  document.getElementById('pw-old').value = '';
+  document.getElementById('pw-new').value = '';
+  document.getElementById('pw-confirm').value = '';
+  alertEl.innerHTML = '<div class="alert alert-success">✅ Password successfully changed!</div>';
 }
 </script>
   <footer style="text-align:center;padding:1.5rem;font-family:sans-serif;font-size:0.78rem;color:var(--text3);">
