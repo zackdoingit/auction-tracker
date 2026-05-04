@@ -495,8 +495,8 @@ async function saveSupabaseConfig() {
   const url = document.getElementById('sb-url').value.trim();
   const key = document.getElementById('sb-key').value.trim();
   const el = document.getElementById('setup-alert');
-  if (!url.includes('sbClient.co') || !key.startsWith('eyJ')) {
-    el.innerHTML = '<div class="alert alert-error">Please enter a valid Supabase URL and key.</div>'; return;
+  if (!url || !key) {
+    el.innerHTML = '<div class="alert alert-error">Please enter both fields.</div>'; return;
   }
   localStorage.setItem(SB_URL_KEY, url);
   localStorage.setItem(SB_KEY_KEY, key);
@@ -601,6 +601,11 @@ async function doLogout() {
 async function enterApp() {
   showScreen('app');
   await loadData();
+  if (appClients.length === 0) {
+    await seedDefaultClients();
+    const { data: fresh } = await sbClient.from('clients').select('*').order('name');
+    appClients = fresh || [];
+  }
   renderDashboard();
   renderClients();
 }
@@ -612,12 +617,17 @@ async function loadData() {
   appClients = clients || [];
   appInvoices = invoices || [];
 
-  // Seed default clients if none exist
-  if (appClients.length === 0) {
-    await seedDefaultClients();
-    const { data: fresh } = await sbClient.from('clients').select('*').order('name');
-    appClients = fresh || [];
-  }
+  // Seeding handled in enterApp
+}
+
+async function forceSeed() {
+  if (!confirm('Load all 60 default clients? This will not delete any existing clients.')) return;
+  await seedDefaultClients();
+  const { data: fresh } = await sbClient.from('clients').select('*').order('name');
+  appClients = fresh || [];
+  renderClients();
+  renderDashboard();
+  alert('✅ ' + appClients.length + ' clients loaded!');
 }
 
 async function seedDefaultClients() {
@@ -713,7 +723,8 @@ function renderClients() {
     '<button class="btn-sm primary" onclick="openModal(\'add-client-modal\')">+ Add Client</button></div>';
 
   if (!filtered.length) {
-    html += '<div class="empty-state"><p>No clients found.</p></div>';
+    html += '<div class="empty-state"><div class="big">📋</div><p>No clients found.</p>' +
+      '<button class="btn-sm primary" style="margin-top:1rem;" onclick="forceSeed()">Load Default Clients</button></div>';
   } else {
     html += filtered.map(c => renderClientCard(c)).join('');
   }
