@@ -1,255 +1,257 @@
-     <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Auction Settlement Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #f4f1eb;
-    --surface: #ffffff;
-    --surface2: #f9f7f3;
-    --border: #e0dbd0;
-    --text: #1a1a1a;
-    --text2: #5a5650;
-    --text3: #9a9590;
-    --accent: #2c5f2e;
-    --accent2: #4a9e4d;
-    --accent-light: #e8f5e9;
-    --danger: #c0392b;
-    --danger-light: #fdf0ee;
-    --warn: #e67e22;
-    --warn-light: #fef9f0;
-    --radius: 10px;
-    --shadow: 0 2px 12px rgba(0,0,0,0.08);
-  }
-  body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-  
-  /* LOGIN */
-  #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1rem; }
-  .login-card { background: var(--surface); border-radius: 16px; padding: 2.5rem 2rem; width: 100%; max-width: 380px; box-shadow: var(--shadow); text-align: center; }
-  .login-card h1 { font-size: 1.6rem; color: var(--accent); margin-bottom: 0.3rem; }
-  .login-card p { color: var(--text2); font-size: 0.9rem; margin-bottom: 2rem; font-family: sans-serif; }
-  .login-card input { width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 1rem; margin-bottom: 1rem; outline: none; transition: border-color 0.2s; font-family: sans-serif; }
-  .login-card input:focus { border-color: var(--accent); }
-  .btn-primary { width: 100%; padding: 0.75rem; background: var(--accent); color: white; border: none; border-radius: var(--radius); font-size: 1rem; cursor: pointer; font-family: sans-serif; transition: background 0.2s; }
-  .btn-primary:hover { background: #1e4220; }
-  .error-msg { color: var(--danger); font-size: 0.85rem; margin-top: 0.5rem; font-family: sans-serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #f4f1eb; --surface: #ffffff; --surface2: #f9f7f3; --border: #e0dbd0;
+  --text: #1a1a1a; --text2: #5a5650; --text3: #9a9590;
+  --accent: #2c5f2e; --accent2: #4a9e4d; --accent-light: #e8f5e9;
+  --danger: #c0392b; --danger-light: #fdf0ee;
+  --warn: #e67e22; --warn-light: #fef9f0;
+  --radius: 10px; --shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+body { font-family: 'Georgia', serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
-  /* APP LAYOUT */
-  #app { display: none; flex-direction: column; min-height: 100vh; }
-  header { background: var(--accent); color: white; padding: 0.9rem 1.25rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-  header h1 { font-size: 1.1rem; }
-  header .header-actions { display: flex; gap: 0.5rem; align-items: center; }
-  .btn-ghost { background: rgba(255,255,255,0.15); color: white; border: none; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer; font-size: 0.82rem; font-family: sans-serif; transition: background 0.2s; }
-  .btn-ghost:hover { background: rgba(255,255,255,0.25); }
+/* SETUP / LOGIN */
+#setup-screen, #login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1rem; }
+.auth-card { background:var(--surface); border-radius:16px; padding:2.5rem 2rem; width:100%; max-width:400px; box-shadow:var(--shadow); }
+.auth-card h1 { font-size:1.5rem; color:var(--accent); margin-bottom:0.25rem; text-align:center; }
+.auth-card .sub { text-align:center; color:var(--text2); font-family:sans-serif; font-size:0.88rem; margin-bottom:2rem; }
+.form-group { margin-bottom:1rem; }
+.form-group label { display:block; font-size:0.82rem; color:var(--text2); margin-bottom:0.3rem; font-family:sans-serif; }
+.form-group input, .form-group select, .form-group textarea { width:100%; padding:0.65rem 0.9rem; border:1.5px solid var(--border); border-radius:8px; font-size:0.9rem; font-family:sans-serif; outline:none; transition:border-color 0.2s; background:var(--surface); color:var(--text); }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:var(--accent); }
+.btn-primary { width:100%; padding:0.75rem; background:var(--accent); color:white; border:none; border-radius:var(--radius); font-size:1rem; cursor:pointer; font-family:sans-serif; transition:background 0.2s; margin-top:0.5rem; }
+.btn-primary:hover { background:#1e4220; }
+.alert { padding:0.75rem 1rem; border-radius:8px; font-family:sans-serif; font-size:0.88rem; margin-bottom:0.75rem; }
+.alert-success { background:var(--accent-light); color:var(--accent); }
+.alert-error { background:var(--danger-light); color:var(--danger); }
+.alert-warn { background:var(--warn-light); color:var(--warn); }
+.setup-steps { background:var(--surface2); border-radius:8px; padding:1rem; margin-bottom:1.25rem; font-family:sans-serif; font-size:0.83rem; color:var(--text2); }
+.setup-steps ol { padding-left:1.25rem; }
+.setup-steps li { margin-bottom:0.4rem; }
+.setup-steps a { color:var(--accent); }
+code { background:#f0ede8; padding:0.1rem 0.3rem; border-radius:4px; font-size:0.82rem; }
 
-  /* NAV */
-  nav { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; }
-  nav button { flex-shrink: 0; padding: 0.75rem 1.1rem; background: none; border: none; border-bottom: 3px solid transparent; font-size: 0.88rem; cursor: pointer; color: var(--text2); font-family: sans-serif; transition: all 0.2s; white-space: nowrap; }
-  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+/* APP */
+#app { display:none; flex-direction:column; min-height:100vh; }
+header { background:var(--accent); color:white; padding:0.9rem 1.25rem; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+header h1 { font-size:1.1rem; }
+.header-actions { display:flex; gap:0.5rem; align-items:center; }
+.btn-ghost { background:rgba(255,255,255,0.15); color:white; border:none; padding:0.4rem 0.8rem; border-radius:6px; cursor:pointer; font-size:0.82rem; font-family:sans-serif; transition:background 0.2s; }
+.btn-ghost:hover { background:rgba(255,255,255,0.25); }
+nav { background:var(--surface); border-bottom:1px solid var(--border); display:flex; overflow-x:auto; }
+nav button { flex-shrink:0; padding:0.75rem 1.1rem; background:none; border:none; border-bottom:3px solid transparent; font-size:0.88rem; cursor:pointer; color:var(--text2); font-family:sans-serif; transition:all 0.2s; white-space:nowrap; }
+nav button.active { color:var(--accent); border-bottom-color:var(--accent); font-weight:600; }
+main { padding:1rem; max-width:900px; margin:0 auto; width:100%; flex:1; }
+.tab-content { display:none; }
+.tab-content.active { display:block; }
 
-  main { padding: 1rem; max-width: 900px; margin: 0 auto; width: 100%; flex: 1; }
+/* DASHBOARD */
+.banner { border-radius:var(--radius); padding:1rem 1.25rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center; }
+.banner.green { background:var(--accent); color:white; }
+.banner.red { background:var(--danger); color:white; }
+.banner.orange { background:var(--warn); color:white; }
+.banner .blabel { font-family:sans-serif; font-size:0.82rem; opacity:0.88; }
+.banner .bamount { font-size:1.5rem; margin-top:0.15rem; }
+.stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:0.75rem; margin-bottom:1rem; }
+.stat-card { background:var(--surface); border-radius:var(--radius); padding:1rem; border:1px solid var(--border); }
+.stat-card .slabel { font-size:0.73rem; color:var(--text2); font-family:sans-serif; text-transform:uppercase; letter-spacing:0.04em; margin-bottom:0.3rem; }
+.stat-card .sval { font-size:1.4rem; }
+.stat-card .sval.green { color:var(--accent); }
+.stat-card .sval.red { color:var(--danger); }
+.section-title { font-size:0.75rem; text-transform:uppercase; letter-spacing:0.06em; color:var(--text3); font-family:sans-serif; margin:1.1rem 0 0.6rem; }
 
-  /* DASHBOARD */
-  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.75rem; margin-bottom: 1.25rem; }
-  .stat-card { background: var(--surface); border-radius: var(--radius); padding: 1rem; border: 1px solid var(--border); }
-  .stat-card .label { font-size: 0.75rem; color: var(--text2); font-family: sans-serif; margin-bottom: 0.3rem; text-transform: uppercase; letter-spacing: 0.04em; }
-  .stat-card .value { font-size: 1.5rem; color: var(--text); }
-  .stat-card .value.green { color: var(--accent); }
-  .stat-card .value.red { color: var(--danger); }
+/* CARDS */
+.card { background:var(--surface); border-radius:var(--radius); border:1px solid var(--border); margin-bottom:0.75rem; overflow:hidden; }
+.card-header { padding:0.9rem 1rem; display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
+.card-header:hover { background:var(--surface2); }
+.card-body { padding:0.75rem 1rem 1rem; border-top:1px solid var(--border); }
+.client-name { font-size:1rem; font-weight:600; }
+.client-meta { font-size:0.8rem; color:var(--text2); font-family:sans-serif; margin-top:0.15rem; }
+.badge { display:inline-block; padding:0.2rem 0.55rem; border-radius:20px; font-size:0.73rem; font-family:sans-serif; }
+.badge-warn { background:var(--warn-light); color:var(--warn); }
+.badge-green { background:var(--accent-light); color:var(--accent); }
+.chevron { transition:transform 0.2s; display:inline-block; font-style:normal; }
+.chevron.open { transform:rotate(90deg); }
 
-  /* CARDS */
-  .card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); margin-bottom: 0.75rem; overflow: hidden; }
-  .card-header { padding: 0.9rem 1rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
-  .card-header:hover { background: var(--surface2); }
-  .card-body { padding: 0 1rem 1rem; border-top: 1px solid var(--border); }
-  .client-name { font-size: 1rem; font-weight: 600; }
-  .client-meta { font-size: 0.8rem; color: var(--text2); font-family: sans-serif; margin-top: 0.15rem; }
-  .badge { display: inline-block; padding: 0.2rem 0.55rem; border-radius: 20px; font-size: 0.75rem; font-family: sans-serif; }
-  .badge-warn { background: var(--warn-light); color: var(--warn); }
-  .badge-green { background: var(--accent-light); color: var(--accent); }
-  .badge-gray { background: #f0ede8; color: var(--text2); }
-  .badge-red { background: var(--danger-light); color: var(--danger); }
+/* SUB ROWS */
+.sub-row { display:flex; align-items:flex-start; justify-content:space-between; padding:0.6rem 0; border-bottom:1px solid var(--border); gap:0.5rem; }
+.sub-row:last-child { border-bottom:none; }
+.sub-name { font-family:sans-serif; font-size:0.88rem; font-weight:500; }
+.sub-meta { font-family:sans-serif; font-size:0.78rem; color:var(--text2); margin-top:0.1rem; }
+.sub-actions { display:flex; gap:0.4rem; flex-wrap:wrap; justify-content:flex-end; }
+.btn-sm { padding:0.3rem 0.65rem; border-radius:6px; font-size:0.78rem; cursor:pointer; border:1px solid var(--border); background:var(--surface2); color:var(--text); font-family:sans-serif; transition:all 0.15s; white-space:nowrap; }
+.btn-sm:hover { background:var(--border); }
+.btn-sm.primary { background:var(--accent); color:white; border-color:var(--accent); }
+.btn-sm.primary:hover { background:#1e4220; }
+.btn-sm.danger { background:var(--danger-light); color:var(--danger); border-color:var(--danger); }
 
-  /* SUB-CLIENT ROW */
-  .sub-row { display: flex; align-items: center; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-family: sans-serif; font-size: 0.88rem; }
-  .sub-row:last-child { border-bottom: none; }
-  .sub-row .sub-id { color: var(--text2); font-size: 0.8rem; }
-  .sub-row .sub-name { font-weight: 500; }
-  .sub-actions { display: flex; gap: 0.4rem; }
-  .btn-sm { padding: 0.3rem 0.65rem; border-radius: 6px; font-size: 0.78rem; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text); font-family: sans-serif; transition: all 0.15s; }
-  .btn-sm:hover { background: var(--border); }
-  .btn-sm.primary { background: var(--accent); color: white; border-color: var(--accent); }
-  .btn-sm.primary:hover { background: #1e4220; }
-  .btn-sm.danger { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+/* CONTACTS */
+.contact-row { display:flex; align-items:center; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid var(--border); gap:0.5rem; }
+.contact-row:last-child { border-bottom:none; }
+.contact-info { font-family:sans-serif; font-size:0.85rem; }
+.contact-info .cname { font-weight:500; }
+.contact-info .cdetail { font-size:0.78rem; color:var(--text2); margin-top:0.1rem; }
 
-  /* FORMS */
-  .form-group { margin-bottom: 0.9rem; }
-  .form-group label { display: block; font-size: 0.82rem; color: var(--text2); margin-bottom: 0.3rem; font-family: sans-serif; }
-  .form-group input, .form-group select { width: 100%; padding: 0.6rem 0.8rem; border: 1.5px solid var(--border); border-radius: 8px; font-size: 0.9rem; font-family: sans-serif; outline: none; transition: border-color 0.2s; background: var(--surface); color: var(--text); }
-  .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+/* UPLOAD */
+.upload-area { border:2px dashed var(--border); border-radius:var(--radius); padding:2rem 1rem; text-align:center; cursor:pointer; transition:all 0.2s; background:var(--surface2); }
+.upload-area:hover, .upload-area.drag { border-color:var(--accent); background:var(--accent-light); }
+.upload-area .icon { font-size:2rem; margin-bottom:0.75rem; }
+.upload-area p { color:var(--text2); font-family:sans-serif; font-size:0.9rem; }
+.upload-area input { display:none; }
+.processing { text-align:center; padding:1.5rem; color:var(--text2); font-family:sans-serif; }
+.spinner { display:inline-block; width:28px; height:28px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.7s linear infinite; margin-bottom:0.5rem; }
+@keyframes spin { to { transform:rotate(360deg); } }
 
-  /* MODAL */
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
-  .modal-overlay.open { display: flex; }
-  .modal { background: var(--surface); border-radius: 14px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
-  .modal-header { padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-  .modal-header h3 { font-size: 1.05rem; }
-  .modal-body { padding: 1.25rem; }
-  .modal-footer { padding: 0.9rem 1.25rem; border-top: 1px solid var(--border); display: flex; gap: 0.6rem; justify-content: flex-end; }
-  .btn-close { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text2); padding: 0.2rem 0.4rem; border-radius: 4px; }
-  .btn-close:hover { background: var(--border); }
+/* RESULT */
+.result-card { background:var(--surface); border-radius:var(--radius); border:2px solid var(--accent); padding:1.25rem; margin-top:1rem; }
+.result-line { display:flex; justify-content:space-between; font-family:sans-serif; font-size:0.88rem; padding:0.35rem 0; border-bottom:1px solid var(--border); }
+.result-line:last-child { border-bottom:none; }
+.result-line.total { font-size:1.05rem; font-weight:600; padding-top:0.6rem; }
 
-  /* INVOICE LIST */
-  .invoice-row { display: flex; align-items: flex-start; justify-content: space-between; padding: 0.75rem 0; border-bottom: 1px solid var(--border); gap: 0.5rem; }
-  .invoice-row:last-child { border-bottom: none; }
-  .invoice-date { font-size: 0.78rem; color: var(--text3); font-family: sans-serif; }
-  .invoice-amount { font-size: 1rem; font-weight: 600; white-space: nowrap; }
-  .invoice-amount.owed-to-me { color: var(--accent); }
-  .invoice-amount.i-owe { color: var(--danger); }
-  .toggle-paid { display: flex; align-items: center; gap: 0.4rem; font-size: 0.78rem; font-family: sans-serif; cursor: pointer; color: var(--text2); white-space: nowrap; }
-  .toggle-paid input { cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent); }
+/* INVOICE ROWS */
+.invoice-row { display:flex; align-items:flex-start; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid var(--border); gap:0.5rem; cursor:pointer; }
+.invoice-row:last-child { border-bottom:none; }
+.invoice-row:hover { background:var(--surface2); margin:0 -0.5rem; padding:0.75rem 0.5rem; border-radius:6px; }
+.inv-date { font-size:0.78rem; color:var(--text3); font-family:sans-serif; margin-top:0.15rem; }
+.inv-amount { font-size:1rem; font-weight:600; white-space:nowrap; }
+.inv-amount.green { color:var(--accent); }
+.inv-amount.red { color:var(--danger); }
+.toggle-paid { display:flex; align-items:center; gap:0.4rem; font-size:0.78rem; font-family:sans-serif; cursor:pointer; color:var(--text2); }
+.toggle-paid input { cursor:pointer; width:15px; height:15px; accent-color:var(--accent); }
 
-  /* UPLOAD AREA */
-  .upload-area { border: 2px dashed var(--border); border-radius: var(--radius); padding: 2rem 1rem; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--surface2); }
-  .upload-area:hover, .upload-area.drag { border-color: var(--accent); background: var(--accent-light); }
-  .upload-area .icon { font-size: 2rem; margin-bottom: 0.75rem; }
-  .upload-area p { color: var(--text2); font-family: sans-serif; font-size: 0.9rem; }
-  .upload-area input { display: none; }
-
-  /* RESULT CARD */
-  .result-card { background: var(--surface); border-radius: var(--radius); border: 2px solid var(--accent); padding: 1.25rem; margin-top: 1rem; }
-  .result-card.owes-me { border-color: var(--accent); }
-  .result-card.i-owe { border-color: var(--danger); }
-  .result-line { display: flex; justify-content: space-between; font-family: sans-serif; font-size: 0.88rem; padding: 0.35rem 0; border-bottom: 1px solid var(--border); }
-  .result-line:last-child { border-bottom: none; }
-  .result-line.total { font-size: 1.05rem; font-weight: 600; padding-top: 0.6rem; }
-  .result-line.total .amount { color: var(--accent); }
-  .result-line.total.negative .amount { color: var(--danger); }
-
-  /* SEARCH */
-  .search-bar { width: 100%; padding: 0.65rem 1rem; border: 1.5px solid var(--border); border-radius: var(--radius); font-size: 0.9rem; font-family: sans-serif; outline: none; background: var(--surface); color: var(--text); margin-bottom: 1rem; }
-  .search-bar:focus { border-color: var(--accent); }
-
-  /* MISC */
-  .section-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text3); font-family: sans-serif; margin: 1.25rem 0 0.6rem; }
-  .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--text2); font-family: sans-serif; }
-  .empty-state .big { font-size: 2rem; margin-bottom: 0.5rem; }
-  .processing { text-align: center; padding: 1.5rem; color: var(--text2); font-family: sans-serif; }
-  .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin-bottom: 0.5rem; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .alert { padding: 0.75rem 1rem; border-radius: 8px; font-family: sans-serif; font-size: 0.88rem; margin-bottom: 0.75rem; }
-  .alert-success { background: var(--accent-light); color: var(--accent); }
-  .alert-error { background: var(--danger-light); color: var(--danger); }
-  .chevron { transition: transform 0.2s; display: inline-block; }
-  .chevron.open { transform: rotate(90deg); }
-  .outstanding-total { background: var(--accent); color: white; border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
-  .outstanding-total .label { font-family: sans-serif; font-size: 0.85rem; opacity: 0.85; }
-  .outstanding-total .amount { font-size: 1.6rem; }
-  .tab-content { display: none; }
-  .tab-content.active { display: block; }
-  .invoice-detail { font-size: 0.8rem; color: var(--text2); font-family: sans-serif; margin-top: 0.15rem; }
-  
-  @media (max-width: 480px) {
-    .stats-grid { grid-template-columns: 1fr 1fr; }
-    .form-row { grid-template-columns: 1fr; }
-    main { padding: 0.75rem; }
-  }
+/* MODAL */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; align-items:center; justify-content:center; padding:1rem; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface); border-radius:14px; width:100%; max-width:460px; max-height:92vh; overflow-y:auto; }
+.modal-header { padding:1.1rem 1.25rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+.modal-header h3 { font-size:1.05rem; }
+.modal-body { padding:1.25rem; }
+.modal-footer { padding:0.9rem 1.25rem; border-top:1px solid var(--border); display:flex; gap:0.6rem; justify-content:flex-end; }
+.btn-close { background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--text2); padding:0.2rem 0.4rem; border-radius:4px; }
+.btn-close:hover { background:var(--border); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; }
+.search-bar { width:100%; padding:0.65rem 1rem; border:1.5px solid var(--border); border-radius:var(--radius); font-size:0.9rem; font-family:sans-serif; outline:none; background:var(--surface); color:var(--text); margin-bottom:1rem; }
+.search-bar:focus { border-color:var(--accent); }
+.empty-state { text-align:center; padding:2.5rem 1rem; color:var(--text2); font-family:sans-serif; }
+.empty-state .big { font-size:2rem; margin-bottom:0.5rem; }
+.divider { border:none; border-top:1px solid var(--border); margin:0.75rem 0; }
+footer { text-align:center; padding:1.5rem; font-family:sans-serif; font-size:0.78rem; color:var(--text3); }
+@media(max-width:480px) { .form-row { grid-template-columns:1fr; } main { padding:0.75rem; } }
 </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="login-screen">
-  <div class="login-card">
+<!-- SETUP SCREEN -->
+<div id="setup-screen" style="display:none;">
+  <div class="auth-card">
     <h1>🏛️ Auction Tracker</h1>
-    <p>Settlement management system</p>
-    <input type="password" id="pw-input" placeholder="Enter password" />
-    <button class="btn-primary" onclick="doLogin()">Sign In</button>
-    <p class="error-msg" id="login-error"></p>
-    <p id="login-hint" style="font-family:sans-serif;font-size:0.78rem;color:var(--text3);margin-top:1rem;"></p>
+    <p class="sub">One-time Supabase setup</p>
+    <div class="setup-steps">
+      <ol>
+        <li>Go to <a href="https://sbClient.com" target="_blank">sbClient.com</a> → sign up free</li>
+        <li>Create a new project</li>
+        <li>Go to <strong>Project Settings → API</strong></li>
+        <li>Copy your <strong>Project URL</strong> and <strong>anon public key</strong></li>
+        <li>Paste them below and click Save</li>
+      </ol>
+    </div>
+    <div id="setup-alert"></div>
+    <div class="form-group">
+      <label>Supabase Project URL</label>
+      <input type="text" id="sb-url" placeholder="https://xxxx.sbClient.co" />
+    </div>
+    <div class="form-group">
+      <label>Supabase Anon Key</label>
+      <input type="text" id="sb-key" placeholder="eyJ..." />
+    </div>
+    <button class="btn-primary" onclick="saveSupabaseConfig()">Save & Continue</button>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+  <div class="auth-card">
+    <h1>🏛️ Auction Tracker</h1>
+    <p class="sub" id="login-sub">Sign in to your account</p>
+    <div id="login-alert"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="you@email.com" />
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="Password" />
+    </div>
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">Sign In</button>
+    <button class="btn-primary" id="register-btn" onclick="doRegister()" style="background:var(--text2);margin-top:0.5rem;display:none;">Create Account</button>
+    <p style="text-align:center;margin-top:1rem;font-family:sans-serif;font-size:0.82rem;color:var(--text2);">
+      <span id="toggle-auth-text">First time?</span>
+      <a href="#" onclick="toggleAuthMode()" style="color:var(--accent);"> <span id="toggle-auth-link">Create account</span></a>
+    </p>
+    <p style="text-align:center;margin-top:0.5rem;font-family:sans-serif;font-size:0.75rem;color:var(--text3);">
+      <a href="#" onclick="showSetup()" style="color:var(--text3);">⚙️ Change Supabase settings</a>
+    </p>
+  </div>
+</div>
+
+<!-- APP -->
 <div id="app">
   <header>
     <h1>🏛️ Auction Tracker</h1>
     <div class="header-actions">
-      <button class="btn-ghost" onclick="showTab('upload')">+ Upload PDF</button>
+      <button class="btn-ghost" onclick="showTab('upload')">+ Upload</button>
       <button class="btn-ghost" onclick="doLogout()">Sign Out</button>
     </div>
   </header>
   <nav>
     <button class="active" onclick="showTab('dashboard')" data-tab="dashboard">Dashboard</button>
     <button onclick="showTab('clients')" data-tab="clients">Clients</button>
-    <button onclick="showTab('upload')" data-tab="upload">Upload PDF</button>
-    <button onclick="showTab('history')" data-tab="history">All Invoices</button>
+    <button onclick="showTab('upload')" data-tab="upload">Upload</button>
+    <button onclick="showTab('history')" data-tab="history">Invoices</button>
     <button onclick="showTab('settings')" data-tab="settings">Settings</button>
   </nav>
   <main>
 
-    <!-- DASHBOARD TAB -->
+    <!-- DASHBOARD -->
     <div id="tab-dashboard" class="tab-content active">
-      <div class="outstanding-total">
-        <div>
-          <div class="label">Total Commission Earned</div>
-          <div class="amount" id="dash-total">$0.00</div>
-        </div>
-        <div style="font-size:1.8rem;">💰</div>
+      <div class="banner green">
+        <div><div class="blabel">💰 Total Commission Earned</div><div class="bamount" id="dash-commission">$0.00</div></div>
+        <div style="font-size:1.6rem;">💰</div>
       </div>
-      <div class="outstanding-total" style="background:var(--danger);margin-bottom:0.75rem;">
-        <div>
-          <div class="label">📤 Total To Send Out (I have the check)</div>
-          <div class="amount" id="dash-you-owe">$0.00</div>
-        </div>
-        <div style="font-size:1.8rem;">📤</div>
+      <div class="banner red">
+        <div><div class="blabel">📤 Total To Send Out (I have the check)</div><div class="bamount" id="dash-send-out">$0.00</div></div>
+        <div style="font-size:1.6rem;">📤</div>
       </div>
-      <div class="outstanding-total" style="background:var(--warn);margin-bottom:0.75rem;">
-        <div>
-          <div class="label">💰 Commissions Owed To Me (they have the check)</div>
-          <div class="amount" id="dash-comm-owed">$0.00</div>
-        </div>
-        <div style="font-size:1.8rem;">⏳</div>
+      <div class="banner orange">
+        <div><div class="blabel">⏳ Commissions Owed To Me (they have the check)</div><div class="bamount" id="dash-owed-me">$0.00</div></div>
+        <div style="font-size:1.6rem;">⏳</div>
       </div>
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="label">Total Clients</div>
-          <div class="value" id="dash-clients">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Total Consignor #s</div>
-          <div class="value" id="dash-subs">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Pending Checks</div>
-          <div class="value red" id="dash-unpaid">0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Sent This Month</div>
-          <div class="value green" id="dash-paid-month">$0</div>
-        </div>
-        <div class="stat-card">
-          <div class="label">Total Invoices</div>
-          <div class="value" id="dash-total-inv">0</div>
-        </div>
+        <div class="stat-card"><div class="slabel">Total Clients</div><div class="sval" id="dash-clients">0</div></div>
+        <div class="stat-card"><div class="slabel">Total Consignor #s</div><div class="sval" id="dash-subs">0</div></div>
+        <div class="stat-card"><div class="slabel">Pending Checks</div><div class="sval red" id="dash-pending">0</div></div>
+        <div class="stat-card"><div class="slabel">Total Invoices</div><div class="sval" id="dash-total-inv">0</div></div>
       </div>
       <div class="section-title">Recent Activity</div>
       <div id="dash-recent"></div>
     </div>
 
-    <!-- CLIENTS TAB -->
+    <!-- CLIENTS -->
     <div id="tab-clients" class="tab-content">
-      <input class="search-bar" type="text" placeholder="Search clients..." id="client-search" oninput="renderClients()" />
+      <input class="search-bar" type="text" placeholder="Search clients or consignor #..." id="client-search" oninput="renderClients()" />
       <div id="clients-list"></div>
     </div>
 
-    <!-- UPLOAD TAB -->
+    <!-- UPLOAD -->
     <div id="tab-upload" class="tab-content">
-      <div class="section-title">Upload Settlement PDF</div>
+      <div class="section-title">Upload Settlement</div>
       <div class="card" style="padding:1.25rem;">
         <div class="upload-area" id="upload-area" onclick="document.getElementById('any-file').click()" ondragover="handleDrag(event)" ondrop="handleDrop(event)">
           <div class="icon">📄📷</div>
@@ -261,61 +263,58 @@
       </div>
     </div>
 
-    <!-- HISTORY TAB -->
+    <!-- HISTORY -->
     <div id="tab-history" class="tab-content">
-      <input class="search-bar" type="text" placeholder="Search by client name..." id="history-search" oninput="renderHistory()" />
+      <input class="search-bar" type="text" placeholder="Search by client name or consignor #..." id="history-search" oninput="renderHistory()" />
       <div id="history-list"></div>
     </div>
 
-  
-    <!-- SETTINGS TAB -->
+    <!-- SETTINGS -->
     <div id="tab-settings" class="tab-content">
-      <div class="section-title">Google Gemini API Key</div>
-      <div class="card" style="padding:1.25rem;max-width:400px;margin-bottom:1.25rem;">
-        <p style="font-family:sans-serif;font-size:0.85rem;color:var(--text2);margin-bottom:1rem;">Required for photo/image uploads. Free — get your key at <strong>aistudio.google.com</strong></p>
+      <div class="section-title">Google Gemini API Key (for photo uploads)</div>
+      <div class="card" style="padding:1.25rem;max-width:420px;margin-bottom:1.25rem;">
+        <p style="font-family:sans-serif;font-size:0.85rem;color:var(--text2);margin-bottom:1rem;">Free — get your key at <strong>aistudio.google.com</strong></p>
         <div id="api-key-alert"></div>
         <div class="form-group">
           <label>API Key</label>
           <input type="password" id="api-key-input" placeholder="AIzaSy..." />
         </div>
-        <div style="display:flex;gap:0.6rem;">
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
           <button class="btn-sm primary" onclick="saveApiKey()">Save Key</button>
           <button class="btn-sm" onclick="toggleShowKey()">Show/Hide</button>
           <button class="btn-sm danger" onclick="clearApiKey()">Remove Key</button>
         </div>
         <p id="api-key-status" style="font-family:sans-serif;font-size:0.78rem;color:var(--text3);margin-top:0.75rem;"></p>
       </div>
+
       <div class="section-title">Change Password</div>
-      <div class="card" style="padding:1.25rem;max-width:400px;">
+      <div class="card" style="padding:1.25rem;max-width:420px;margin-bottom:1.25rem;">
         <div id="pw-change-alert"></div>
-        <div class="form-group">
-          <label>Current Password</label>
-          <input type="password" id="pw-old" placeholder="Enter current password" />
+        <div class="form-group"><label>New Password</label><input type="password" id="pw-new" placeholder="New password" /></div>
+        <div class="form-group"><label>Confirm Password</label><input type="password" id="pw-confirm" placeholder="Confirm password" /></div>
+        <button class="btn-sm primary" onclick="changePassword()" style="width:100%;padding:0.65rem;">Update Password</button>
+      </div>
+
+      <div class="section-title">Data Backup</div>
+      <div class="card" style="padding:1.25rem;max-width:420px;">
+        <p style="font-family:sans-serif;font-size:0.85rem;color:var(--text2);margin-bottom:1rem;">Export all your data as a backup file or import a previous backup.</p>
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+          <button class="btn-sm primary" onclick="exportData()">⬇️ Export Backup</button>
+          <button class="btn-sm" onclick="document.getElementById('import-file').click()">⬆️ Import Backup</button>
+          <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)" />
         </div>
-        <div class="form-group">
-          <label>New Password</label>
-          <input type="password" id="pw-new" placeholder="Enter new password (min 4 chars)" />
-        </div>
-        <div class="form-group">
-          <label>Confirm New Password</label>
-          <input type="password" id="pw-confirm" placeholder="Repeat new password" />
-        </div>
-        <button class="btn-sm primary" style="width:100%;padding:0.65rem;" onclick="changePassword()">Update Password</button>
       </div>
     </div>
-</main>
+
+  </main>
+  <footer>Built by Hirschprung Digital © 2026</footer>
 </div>
 
-<!-- MODAL: Configure Sub-client -->
+<!-- MODALS -->
 <div class="modal-overlay" id="config-modal">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="config-modal-title">Configure Client</h3>
-      <button class="btn-close" onclick="closeModal('config-modal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div id="config-modal-body"></div>
-    </div>
+    <div class="modal-header"><h3 id="config-title">Configure Consignor</h3><button class="btn-close" onclick="closeModal('config-modal')">✕</button></div>
+    <div class="modal-body" id="config-body"></div>
     <div class="modal-footer">
       <button class="btn-sm" onclick="closeModal('config-modal')">Cancel</button>
       <button class="btn-sm primary" onclick="saveConfig()">Save</button>
@@ -323,96 +322,50 @@
   </div>
 </div>
 
-<!-- MODAL: Invoice Detail -->
-<div class="modal-overlay" id="invoice-modal">
+<div class="modal-overlay" id="contacts-modal">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="invoice-modal-title">Invoice Detail</h3>
-      <button class="btn-close" onclick="closeModal('invoice-modal')">✕</button>
-    </div>
-    <div class="modal-body" id="invoice-modal-body"></div>
+    <div class="modal-header"><h3 id="contacts-title">Contacts</h3><button class="btn-close" onclick="closeModal('contacts-modal')">✕</button></div>
+    <div class="modal-body" id="contacts-body"></div>
     <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal('invoice-modal')">Close</button>
+      <button class="btn-sm" onclick="closeModal('contacts-modal')">Close</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Add Client -->
+<div class="modal-overlay" id="add-contact-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="add-contact-title">Add Contact</h3><button class="btn-close" onclick="closeModal('add-contact-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-group"><label>Name</label><input type="text" id="contact-name" placeholder="John Smith" /></div>
+      <div class="form-group"><label>Phone <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label><input type="tel" id="contact-phone" placeholder="555-1234" /></div>
+      <div class="form-group"><label>Email <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label><input type="email" id="contact-email" placeholder="john@email.com" /></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('add-contact-modal')">Cancel</button>
+      <button class="btn-sm primary" onclick="saveContact()">Add Contact</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="add-client-modal">
   <div class="modal">
-    <div class="modal-header">
-      <h3>Add New Client</h3>
-      <button class="btn-close" onclick="closeModal('add-client-modal')">✕</button>
-    </div>
+    <div class="modal-header"><h3>Add New Client</h3><button class="btn-close" onclick="closeModal('add-client-modal')">✕</button></div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Client / Company Name</label>
-        <input type="text" id="new-client-name" placeholder="e.g. BHRS" />
-      </div>
-      <div class="form-group">
-        <label>Consignor Number</label>
-        <input type="number" id="new-client-num" placeholder="e.g. 730" />
-      </div>
-      <div class="form-group">
-        <label>Contact Name <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
-        <input type="text" id="new-client-person" placeholder="e.g. John Smith" />
-      </div>
-      <div class="form-group">
-        <label>Phone <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
-        <input type="tel" id="new-client-phone" placeholder="e.g. 555-1234" />
-      </div>
-      <div class="form-group">
-        <label>Email <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
-        <input type="email" id="new-client-email" placeholder="e.g. john@example.com" />
-      </div>
+      <div class="form-group"><label>Company / Client Name</label><input type="text" id="new-client-name" placeholder="e.g. BHRS" /></div>
+      <div class="form-group"><label>Consignor Number</label><input type="number" id="new-client-num" placeholder="e.g. 730" /></div>
     </div>
     <div class="modal-footer">
       <button class="btn-sm" onclick="closeModal('add-client-modal')">Cancel</button>
-      <button class="btn-sm primary" onclick="addNewClient()">Add Client</button>
+      <button class="btn-sm primary" onclick="addNewClient()">Add</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Edit Contact -->
-<div class="modal-overlay" id="edit-contact-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="edit-contact-title">Edit Contact Info</h3>
-      <button class="btn-close" onclick="closeModal('edit-contact-modal')">✕</button>
-    </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label>Contact Name <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
-        <input type="text" id="edit-contact-person" placeholder="e.g. John Smith" />
-      </div>
-      <div class="form-group">
-        <label>Phone <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
-        <input type="tel" id="edit-contact-phone" placeholder="e.g. 555-1234" />
-      </div>
-      <div class="form-group">
-        <label>Email <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
-        <input type="email" id="edit-contact-email" placeholder="e.g. john@example.com" />
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn-sm" onclick="closeModal('edit-contact-modal')">Cancel</button>
-      <button class="btn-sm primary" onclick="saveContact()">Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: Add Sub Number -->
 <div class="modal-overlay" id="add-sub-modal">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="add-sub-title">Add Sub Number</h3>
-      <button class="btn-close" onclick="closeModal('add-sub-modal')">✕</button>
-    </div>
+    <div class="modal-header"><h3 id="add-sub-title">Add Sub Number</h3><button class="btn-close" onclick="closeModal('add-sub-modal')">✕</button></div>
     <div class="modal-body">
-      <div class="form-group">
-        <label>Consignor Number</label>
-        <input type="number" id="new-sub-num" placeholder="e.g. 1477" />
-      </div>
+      <div class="form-group"><label>Consignor Number</label><input type="number" id="new-sub-num" placeholder="e.g. 1477" /></div>
     </div>
     <div class="modal-footer">
       <button class="btn-sm" onclick="closeModal('add-sub-modal')">Cancel</button>
@@ -421,138 +374,287 @@
   </div>
 </div>
 
-<script>
-// ─── DATA ───────────────────────────────────────────────────────────
-const PASS_KEY = 'auc_pass';
-const DATA_KEY = 'auc_data';
+<div class="modal-overlay" id="invoice-modal">
+  <div class="modal">
+    <div class="modal-header"><h3 id="invoice-modal-title">Invoice Detail</h3><button class="btn-close" onclick="closeModal('invoice-modal')">✕</button></div>
+    <div class="modal-body" id="invoice-modal-body"></div>
+    <div class="modal-footer"><button class="btn-sm" onclick="closeModal('invoice-modal')">Close</button></div>
+  </div>
+</div>
 
+<script>
+// ─── SUPABASE CONFIG ─────────────────────────────────────────────────
+const SB_URL_KEY = 'sb_url';
+const SB_KEY_KEY = 'sb_key';
+const API_KEY_STORE = 'auc_apikey';
+
+let sbClient = null;
+let currentUser = null;
+
+// ─── DEFAULT CLIENTS (sorted alphabetically) ─────────────────────────
 const DEFAULT_CLIENTS = [
-  { id: 'c1', name: 'Y&R Trading', contact:{personName:"",phone:"",email:""}, subs: [{num:2195,pct:null,basis:null}] },
-  { id: 'c2', name: 'Hamilton', contact:{personName:"",phone:"",email:""}, subs: [{num:2035,pct:null,basis:null}] },
-  { id: 'c3', name: 'BHRS', contact:{personName:"",phone:"",email:""}, subs: [{num:730,pct:null,basis:null}] },
-  { id: 'c4', name: 'Alltell', contact:{personName:"",phone:"",email:""}, subs: [{num:1325,pct:null,basis:null}] },
-  { id: 'c5', name: 'Crosson', contact:{personName:"",phone:"",email:""}, subs: [{num:975,pct:null,basis:null}] },
-  { id: 'c6', name: 'Koolmore', contact:{personName:"",phone:"",email:""}, subs: [{num:625,pct:null,basis:null}] },
-  { id: 'c7', name: 'Leacco', contact:{personName:"",phone:"",email:""}, subs: [{num:2025,pct:null,basis:null}] },
-  { id: 'c8', name: 'EGGKIT', contact:{personName:"",phone:"",email:""}, subs: [{num:2080,pct:null,basis:null}] },
-  { id: 'c9', name: 'Schnuer Eatontown', contact:{personName:"",phone:"",email:""}, subs: [{num:918,pct:null,basis:null}] },
-  { id: 'c10', name: 'Pemberton', contact:{personName:"",phone:"",email:""}, subs: [{num:600,pct:null,basis:null}, {num:100,pct:null,basis:null}] },
-  { id: 'c11', name: 'Hoocoo', contact:{personName:"",phone:"",email:""}, subs: [{num:650,pct:null,basis:null}] },
-  { id: 'c12', name: 'Impact Tech', contact:{personName:"",phone:"",email:""}, subs: [{num:700,pct:null,basis:null}, {num:1477,pct:null,basis:null}] },
-  { id: 'c13', name: 'KB', contact:{personName:"",phone:"",email:""}, subs: [{num:2155,pct:null,basis:null}] },
-  { id: 'c14', name: 'Strictly Kosher', contact:{personName:"",phone:"",email:""}, subs: [{num:1308,pct:null,basis:null}] },
-  { id: 'c15', name: 'Marcys', contact:{personName:"",phone:"",email:""}, subs: [{num:1390,pct:null,basis:null}] },
-  { id: 'c16', name: 'Open Box', contact:{personName:"",phone:"",email:""}, subs: [{num:1360,pct:null,basis:null}] },
-  { id: 'c17', name: 'Wellington', contact:{personName:"",phone:"",email:""}, subs: [{num:101,pct:null,basis:null}] },
-  { id: 'c18', name: 'GT Imports', contact:{personName:"",phone:"",email:""}, subs: [{num:1025,pct:null,basis:null}] },
-  { id: 'c19', name: 'Leather Luxury', contact:{personName:"",phone:"",email:""}, subs: [{num:1340,pct:null,basis:null}] },
-  { id: 'c20', name: 'Daves Electronics', contact:{personName:"",phone:"",email:""}, subs: [{num:1450,pct:null,basis:null}] },
-  { id: 'c21', name: 'Focus Camera', contact:{personName:"",phone:"",email:""}, subs: [{num:1270,pct:null,basis:null}] },
-  { id: 'c22', name: 'Monsey Watches', contact:{personName:"",phone:"",email:""}, subs: [{num:2085,pct:null,basis:null}] },
-  { id: 'c23', name: 'Gluck Watches', contact:{personName:"",phone:"",email:""}, subs: [{num:2095,pct:null,basis:null}] },
-  { id: 'c24', name: 'Connect Distributors', contact:{personName:"",phone:"",email:""}, subs: [{num:3590,pct:null,basis:null}] },
-  { id: 'c25', name: 'LEB', contact:{personName:"",phone:"",email:""}, subs: [{num:2175,pct:null,basis:null}] },
-  { id: 'c26', name: 'Apex Returns', contact:{personName:"",phone:"",email:""}, subs: [{num:2015,pct:null,basis:null}] },
-  { id: 'c27', name: 'Sky Traders', contact:{personName:"",phone:"",email:""}, subs: [{num:3115,pct:null,basis:null}] },
-  { id: 'c28', name: 'Lakeside Distributors', contact:{personName:"",phone:"",email:""}, subs: [{num:3175,pct:null,basis:null}] },
-  { id: 'c29', name: 'Ceri Med', contact:{personName:"",phone:"",email:""}, subs: [{num:3125,pct:null,basis:null}] },
-  { id: 'c30', name: 'OSMO Returns', contact:{personName:"",phone:"",email:""}, subs: [{num:3160,pct:null,basis:null}] },
-  { id: 'c31', name: 'Sam Solomon', contact:{personName:"",phone:"",email:""}, subs: [{num:3135,pct:null,basis:null}] },
-  { id: 'c32', name: 'Savvy Digs', contact:{personName:"",phone:"",email:""}, subs: [{num:3145,pct:null,basis:null}] },
-  { id: 'c33', name: 'Liberty Returns', contact:{personName:"",phone:"",email:""}, subs: [{num:2185,pct:null,basis:null}] },
-  { id: 'c34', name: 'Ibuy', contact:{personName:"",phone:"",email:""}, subs: [{num:2000,pct:null,basis:null}] },
-  { id: 'c35', name: 'LNP', contact:{personName:"",phone:"",email:""}, subs: [{num:2065,pct:null,basis:null}] },
-  { id: 'c36', name: 'World Class', contact:{personName:"",phone:"",email:""}, subs: [{num:1650,pct:null,basis:null}] },
-  { id: 'c37', name: 'Fashion House', contact:{personName:"",phone:"",email:""}, subs: [{num:1580,pct:null,basis:null}] },
-  { id: 'c38', name: 'Brands 4 Less', contact:{personName:"",phone:"",email:""}, subs: [{num:1550,pct:null,basis:null}] },
-  { id: 'c39', name: 'Sound Around', contact:{personName:"",phone:"",email:""}, subs: [{num:1530,pct:null,basis:null}] },
-  { id: 'c40', name: 'Jazzer Shack', contact:{personName:"",phone:"",email:""}, subs: [{num:2050,pct:null,basis:null}] },
-  { id: 'c41', name: 'Tress', contact:{personName:"",phone:"",email:""}, subs: [{num:3155,pct:null,basis:null}] },
-  { id: 'c42', name: 'Spruce Distribution', contact:{personName:"",phone:"",email:""}, subs: [{num:2055,pct:null,basis:null}] },
-  { id: 'c43', name: 'Lifepro Fitness', contact:{personName:"",phone:"",email:""}, subs: [{num:1610,pct:null,basis:null}] },
-  { id: 'c44', name: 'Fresh Finest', contact:{personName:"",phone:"",email:""}, subs: [{num:1945,pct:null,basis:null}] },
-  { id: 'c45', name: 'Fesco', contact:{personName:"",phone:"",email:""}, subs: [{num:1985,pct:null,basis:null}] },
-  { id: 'c46', name: 'PrepZone', contact:{personName:"",phone:"",email:""}, subs: [{num:1995,pct:null,basis:null}] },
-  { id: 'c47', name: 'Seasonal Packaging', contact:{personName:"",phone:"",email:""}, subs: [{num:2070,pct:null,basis:null}] },
-  { id: 'c48', name: 'Slick Returns Moshe Horowitz', contact:{personName:"",phone:"",email:""}, subs: [{num:2090,pct:null,basis:null}] },
-  { id: 'c49', name: 'Trends Goods', contact:{personName:"",phone:"",email:""}, subs: [{num:4305,pct:null,basis:null}] },
-  { id: 'c50', name: 'Winners Trading', contact:{personName:"",phone:"",email:""}, subs: [{num:3000,pct:null,basis:null}] },
-  { id: 'c51', name: 'Returned Solutions', contact:{personName:"",phone:"",email:""}, subs: [{num:2075,pct:null,basis:null}] },
-  { id: 'c52', name: 'Buzz', contact:{personName:"",phone:"",email:""}, subs: [{num:3075,pct:null,basis:null}] },
-  { id: 'c53', name: 'Zola', contact:{personName:"",phone:"",email:""}, subs: [{num:3085,pct:null,basis:null}] },
-  { id: 'c54', name: 'Techro', contact:{personName:"",phone:"",email:""}, subs: [{num:3035,pct:null,basis:null}] },
-  { id: 'c55', name: 'Tpro', contact:{personName:"",phone:"",email:""}, subs: [{num:2045,pct:null,basis:null}] },
-  { id: 'c56', name: 'Kiva', contact:{personName:"",phone:"",email:""}, subs: [{num:2012,pct:null,basis:null}] },
-  { id: 'c57', name: 'Mixpresso', contact:{personName:"",phone:"",email:""}, subs: [{num:2022,pct:null,basis:null}] },
-  { id: 'c58', name: '047LG', contact:{personName:"",phone:"",email:""}, subs: [{num:2032,pct:null,basis:null}] },
-  { id: 'c59', name: 'Merrigo', contact:{personName:"",phone:"",email:""}, subs: [{num:2030,pct:null,basis:null}] },
-  { id: 'c60', name: 'Unbeatable Sale', contact:{personName:"",phone:"",email:""}, subs: [{num:1335,pct:null,basis:null}] },
+  { name: "047LG", subs: [{num:2032,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Alltell", subs: [{num:1325,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Apex Returns", subs: [{num:2015,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "BHRS", subs: [{num:730,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Brands 4 Less", subs: [{num:1550,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Buzz", subs: [{num:3075,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Ceri Med", subs: [{num:3125,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Connect Distributors", subs: [{num:3590,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Crosson", subs: [{num:975,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Daves Electronics", subs: [{num:1450,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "EGGKIT", subs: [{num:2080,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Fashion House", subs: [{num:1580,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Fesco", subs: [{num:1985,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Focus Camera", subs: [{num:1270,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Fresh Finest", subs: [{num:1945,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Gluck Watches", subs: [{num:2095,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "GT Imports", subs: [{num:1025,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Hamilton", subs: [{num:2035,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Hoocoo", subs: [{num:650,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Ibuy", subs: [{num:2000,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Impact Tech", subs: [{num:700,pct:null,basis:null,checkReceiver:'me',label:''},{num:1477,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Jazzer Shack", subs: [{num:2050,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "KB", subs: [{num:2155,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Kiva", subs: [{num:2012,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Koolmore", subs: [{num:625,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Lakeside Distributors", subs: [{num:3175,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Leacco", subs: [{num:2025,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Leather Luxury", subs: [{num:1340,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "LEB", subs: [{num:2175,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Liberty Returns", subs: [{num:2185,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Lifepro Fitness", subs: [{num:1610,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "LNP", subs: [{num:2065,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Marcys", subs: [{num:1390,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Merrigo", subs: [{num:2030,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Mixpresso", subs: [{num:2022,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Monsey Watches", subs: [{num:2085,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Open Box", subs: [{num:1360,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "OSMO Returns", subs: [{num:3160,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Pemberton", subs: [{num:600,pct:null,basis:null,checkReceiver:'me',label:''},{num:100,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "PrepZone", subs: [{num:1995,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Returned Solutions", subs: [{num:2075,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Sam Solomon", subs: [{num:3135,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Savvy Digs", subs: [{num:3145,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Schnuer Eatontown", subs: [{num:918,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Seasonal Packaging", subs: [{num:2070,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Sky Traders", subs: [{num:3115,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Slick Returns Moshe Horowitz", subs: [{num:2090,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Sound Around", subs: [{num:1530,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Spruce Distribution", subs: [{num:2055,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Strictly Kosher", subs: [{num:1308,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Techro", subs: [{num:3035,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Tpro", subs: [{num:2045,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Trends Goods", subs: [{num:4305,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Tress", subs: [{num:3155,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Unbeatable Sale", subs: [{num:1335,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Wellington", subs: [{num:101,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Winners Trading", subs: [{num:3000,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "World Class", subs: [{num:1650,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Y&R Trading", subs: [{num:2195,pct:null,basis:null,checkReceiver:'me',label:''}] },
+  { name: "Zola", subs: [{num:3085,pct:null,basis:null,checkReceiver:'me',label:''}] }
 ];
 
-let appData = { clients: [], invoices: [] };
-let currentConfigTarget = null;
-let currentAddSubClient = null;
+// ─── IN-MEMORY STATE ──────────────────────────────────────────────────
+let appClients = [];
+let appInvoices = [];
 let expandedClients = {};
+let currentConfigSub = null;
+let currentContactsClient = null;
+let currentAddSubClientId = null;
 
-function loadData() {
-  const raw = localStorage.getItem(DATA_KEY);
-  if (raw) {
-    try { appData = JSON.parse(raw); } catch(e) {}
-  }
-  if (!appData.clients || appData.clients.length === 0) {
-    appData.clients = JSON.parse(JSON.stringify(DEFAULT_CLIENTS));
-    appData.invoices = appData.invoices || [];
-    saveData();
-  }
-}
-
-function saveData() {
-  localStorage.setItem(DATA_KEY, JSON.stringify(appData));
-}
-
-// ─── AUTH ────────────────────────────────────────────────────────────
-function doLogin() {
-  const pw = document.getElementById('pw-input').value;
-  const stored = localStorage.getItem(PASS_KEY);
-  if (!stored) {
-    if (pw.length < 4) { document.getElementById('login-error').textContent = 'Password must be at least 4 characters.'; return; }
-    localStorage.setItem(PASS_KEY, pw);
-    enterApp();
+// ─── INIT ─────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const url = localStorage.getItem(SB_URL_KEY);
+  const key = localStorage.getItem(SB_KEY_KEY);
+  if (!url || !key) {
+    showScreen('setup');
   } else {
-    if (pw === stored) { enterApp(); }
-    else { document.getElementById('login-error').textContent = 'Incorrect password.'; }
+    initSupabase(url, key);
+    showScreen('login');
   }
-}
-
-// Show hint on page load
-window.addEventListener('DOMContentLoaded', function() {
-  const stored = localStorage.getItem(PASS_KEY);
-  const hint = document.getElementById('login-hint');
-  if (!stored && hint) hint.textContent = 'First time? Enter any password to set it.';
 });
 
-document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+function initSupabase(url, key) {
+  sbClient = window.supabase.createClient(url, key);
+}
 
-function enterApp() {
+function showScreen(name) {
+  document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
-  loadData();
+  document.getElementById('app').style.display = 'none';
+  if (name === 'setup') document.getElementById('setup-screen').style.display = 'flex';
+  else if (name === 'login') document.getElementById('login-screen').style.display = 'flex';
+  else if (name === 'app') document.getElementById('app').style.display = 'flex';
+}
+
+function showSetup() { showScreen('setup'); }
+
+// ─── SUPABASE SETUP ───────────────────────────────────────────────────
+async function saveSupabaseConfig() {
+  const url = document.getElementById('sb-url').value.trim();
+  const key = document.getElementById('sb-key').value.trim();
+  const el = document.getElementById('setup-alert');
+  if (!url.includes('sbClient.co') || !key.startsWith('eyJ')) {
+    el.innerHTML = '<div class="alert alert-error">Please enter a valid Supabase URL and key.</div>'; return;
+  }
+  localStorage.setItem(SB_URL_KEY, url);
+  localStorage.setItem(SB_KEY_KEY, key);
+  initSupabase(url, key);
+  el.innerHTML = '<div class="alert alert-success">✅ Saved! Setting up database...</div>';
+  await setupDatabase();
+}
+
+async function setupDatabase() {
+  const el = document.getElementById('setup-alert');
+  try {
+    // Test connection by checking if tables exist
+    const { error } = await sbClient.from('clients').select('id').limit(1);
+    if (error && error.code === '42P01') {
+      el.innerHTML = '<div class="alert alert-warn">⚠️ Tables not found. Please run the SQL setup in your Supabase dashboard.<br><br>' + getSQLInstructions() + '</div>';
+    } else {
+      el.innerHTML = '<div class="alert alert-success">✅ Connected! You can now create your account.</div>';
+      setTimeout(() => showScreen('login'), 1500);
+    }
+  } catch(e) {
+    el.innerHTML = '<div class="alert alert-error">Connection failed: ' + e.message + '</div>';
+  }
+}
+
+function getSQLInstructions() {
+  return `Go to your Supabase project → <strong>SQL Editor</strong> → paste and run this:<br><br>
+<code style="display:block;white-space:pre-wrap;font-size:0.75rem;background:#f0ede8;padding:0.75rem;border-radius:6px;margin-top:0.5rem;">
+create table if not exists clients (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null,
+  name text not null,
+  subs jsonb default '[]',
+  contacts jsonb default '[]',
+  created_at timestamptz default now()
+);
+create table if not exists invoices (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null,
+  client_id uuid references clients,
+  sub_num integer,
+  co_num text,
+  auction_date text,
+  gross_sale numeric default 0,
+  net_payout numeric default 0,
+  my_commission numeric default 0,
+  basis text,
+  pct numeric,
+  check_receiver text default 'me',
+  paid boolean default false,
+  uploaded_at timestamptz default now()
+);
+alter table clients enable row level security;
+alter table invoices enable row level security;
+create policy "Users own clients" on clients for all using (auth.uid() = user_id);
+create policy "Users own invoices" on invoices for all using (auth.uid() = user_id);
+</code>`;
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────────────
+let authMode = 'login';
+function toggleAuthMode() {
+  authMode = authMode === 'login' ? 'register' : 'login';
+  document.getElementById('login-btn').style.display = authMode === 'login' ? 'block' : 'none';
+  document.getElementById('register-btn').style.display = authMode === 'register' ? 'block' : 'none';
+  document.getElementById('login-sub').textContent = authMode === 'login' ? 'Sign in to your account' : 'Create your account';
+  document.getElementById('toggle-auth-text').textContent = authMode === 'login' ? 'First time?' : 'Already have an account?';
+  document.getElementById('toggle-auth-link').textContent = authMode === 'login' ? 'Create account' : 'Sign in';
+}
+
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const el = document.getElementById('login-alert');
+  if (!email || !pw) { el.innerHTML = '<div class="alert alert-error">Please enter email and password.</div>'; return; }
+  el.innerHTML = '<div class="alert alert-warn">Signing in...</div>';
+  const { data, error } = await sbClient.auth.signInWithPassword({ email, password: pw });
+  if (error) { el.innerHTML = '<div class="alert alert-error">' + error.message + '</div>'; return; }
+  currentUser = data.user;
+  enterApp();
+}
+
+async function doRegister() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-password').value;
+  const el = document.getElementById('login-alert');
+  if (!email || !pw) { el.innerHTML = '<div class="alert alert-error">Please enter email and password.</div>'; return; }
+  if (pw.length < 6) { el.innerHTML = '<div class="alert alert-error">Password must be at least 6 characters.</div>'; return; }
+  el.innerHTML = '<div class="alert alert-warn">Creating account...</div>';
+  const { data, error } = await sbClient.auth.signUp({ email, password: pw });
+  if (error) { el.innerHTML = '<div class="alert alert-error">' + error.message + '</div>'; return; }
+  currentUser = data.user;
+  el.innerHTML = '<div class="alert alert-success">✅ Account created! Loading...</div>';
+  setTimeout(() => enterApp(), 1000);
+}
+
+async function doLogout() {
+  await sbClient.auth.signOut();
+  currentUser = null; appClients = []; appInvoices = [];
+  showScreen('login');
+}
+
+async function enterApp() {
+  showScreen('app');
+  await loadData();
   renderDashboard();
   renderClients();
 }
 
-function doLogout() {
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('pw-input').value = '';
+// ─── DATA LOADING ─────────────────────────────────────────────────────
+async function loadData() {
+  const { data: clients } = await sbClient.from('clients').select('*').order('name');
+  const { data: invoices } = await sbClient.from('invoices').select('*').order('uploaded_at', { ascending: false });
+  appClients = clients || [];
+  appInvoices = invoices || [];
+
+  // Seed default clients if none exist
+  if (appClients.length === 0) {
+    await seedDefaultClients();
+    const { data: fresh } = await sbClient.from('clients').select('*').order('name');
+    appClients = fresh || [];
+  }
 }
 
-// ─── TABS ─────────────────────────────────────────────────────────────
+async function seedDefaultClients() {
+  const rows = DEFAULT_CLIENTS.map(c => ({
+    user_id: currentUser.id,
+    name: c.name,
+    subs: c.subs,
+    contacts: []
+  }));
+  await sbClient.from('clients').insert(rows);
+}
+
+// ─── HELPERS ──────────────────────────────────────────────────────────
+function fmt(n) { return '$' + Math.abs(n || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtSigned(n) { return (n < 0 ? '-' : '') + '$' + Math.abs(n || 0).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function findSubByNum(num) {
+  for (const c of appClients) {
+    if (!c.subs) continue;
+    for (const s of c.subs) {
+      if (s.num == num) return { client: c, sub: s };
+    }
+  }
+  return null;
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
 function showTab(name) {
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  const btn = document.querySelector(`nav button[data-tab="${name}"]`);
+  const btn = document.querySelector('nav button[data-tab="' + name + '"]');
   if (btn) btn.classList.add('active');
   if (name === 'dashboard') renderDashboard();
   if (name === 'clients') renderClients();
@@ -561,84 +663,56 @@ function showTab(name) {
   if (name === 'settings') updateApiKeyStatus();
 }
 
-// ─── HELPERS ─────────────────────────────────────────────────────────
-function fmt(n) { return '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
-function fmtSigned(n) { return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
-
-function findSubByNum(num) {
-  for (const c of appData.clients) {
-    for (const s of c.subs) {
-      if (s.num == num) return { client: c, sub: s };
-    }
-  }
-  return null;
-}
-
-function getInvoicesForSub(num) {
-  return appData.invoices.filter(i => i.subNum == num);
-}
-
-function getOutstandingForSub(num) {
-  return getInvoicesForSub(num).filter(i => !i.paid).reduce((sum, i) => sum + i.myCommission, 0);
-}
-
-// ─── DASHBOARD ───────────────────────────────────────────────────────
+// ─── DASHBOARD ────────────────────────────────────────────────────────
 function renderDashboard() {
-  const allInv = appData.invoices;
-  const unpaid = allInv.filter(i => !i.paid);
-  const totalOwed = unpaid.reduce((s, i) => s + i.myCommission, 0);
-  const totalToSendOut = unpaid.filter(i => (i.checkReceiver || 'me') === 'me').reduce((s, i) => s + (i.netPayout - i.myCommission), 0);
-  const totalCommissionOwedToMe = unpaid.filter(i => i.checkReceiver === 'them').reduce((s, i) => s + i.myCommission, 0);
-  const totalYouOwe = totalToSendOut;
-  
-  const now = new Date();
-  const thisMonth = allInv.filter(i => {
-    const d = new Date(i.date);
-    return i.paid && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  });
-  const paidMonth = thisMonth.reduce((s, i) => s + i.myCommission, 0);
+  const unpaid = appInvoices.filter(i => !i.paid);
+  const commission = unpaid.reduce((s, i) => s + (i.my_commission || 0), 0);
+  const sendOut = unpaid.filter(i => (i.check_receiver || 'me') === 'me').reduce((s, i) => s + ((i.net_payout || 0) - (i.my_commission || 0)), 0);
+  const owedMe = unpaid.filter(i => i.check_receiver === 'them').reduce((s, i) => s + (i.my_commission || 0), 0);
+  const totalSubs = appClients.reduce((s, c) => s + (c.subs ? c.subs.length : 0), 0);
 
-  document.getElementById('dash-total').textContent = fmt(totalOwed);
-  document.getElementById('dash-you-owe').textContent = fmt(totalToSendOut);
-  document.getElementById('dash-comm-owed').textContent = fmt(totalCommissionOwedToMe);
-  const totalSubs = appData.clients.reduce((s, c) => s + c.subs.length, 0);
-  document.getElementById('dash-clients').textContent = appData.clients.length;
+  document.getElementById('dash-commission').textContent = fmt(commission);
+  document.getElementById('dash-send-out').textContent = fmt(sendOut);
+  document.getElementById('dash-owed-me').textContent = fmt(owedMe);
+  document.getElementById('dash-clients').textContent = appClients.length;
   document.getElementById('dash-subs').textContent = totalSubs;
-  document.getElementById('dash-unpaid').textContent = unpaid.length;
-  document.getElementById('dash-paid-month').textContent = fmt(paidMonth);
-  document.getElementById('dash-total-inv').textContent = allInv.length;
+  document.getElementById('dash-pending').textContent = unpaid.length;
+  document.getElementById('dash-total-inv').textContent = appInvoices.length;
 
-  const recent = [...allInv].sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt)).slice(0, 8);
+  const recent = appInvoices.slice(0, 8);
   const el = document.getElementById('dash-recent');
-  if (recent.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="big">📋</div><p>No invoices yet. Upload a PDF to get started.</p></div>';
+  if (!recent.length) {
+    el.innerHTML = '<div class="empty-state"><div class="big">📋</div><p>No invoices yet. Upload a PDF or photo to get started.</p></div>';
     return;
   }
   el.innerHTML = recent.map(inv => {
-    const match = findSubByNum(inv.subNum);
+    const match = findSubByNum(inv.sub_num);
     const name = match ? match.client.name : 'Unknown';
-    return `<div class="invoice-row" onclick="openInvoiceDetail('${inv.id}')" style="cursor:pointer;">
-      <div>
-        <div style="font-family:sans-serif;font-size:0.9rem;font-weight:500;">${name} <span style="color:var(--text3);font-size:0.78rem;">#${inv.subNum}${(function(){ const m=findSubByNum(inv.subNum); return m && m.sub.label ? ' — '+m.sub.label : ''; })()} </span></div>
-        <div class="invoice-date">${inv.auctionDate || 'Unknown date'} · ${inv.paid ? ((inv.checkReceiver||'me')==='me'?'✅ Sent':'✅ Received') : ((inv.checkReceiver||'me')==='me'?'⏳ Pending':'⏳ They Owe Me')}</div>
-      </div>
-      <div class="invoice-amount ${inv.myCommission >= 0 ? 'owed-to-me' : 'i-owe'}">${fmtSigned(inv.myCommission)}</div>
-    </div>`;
+    const label = match && match.sub.label ? ' — ' + match.sub.label : '';
+    const status = inv.paid
+      ? ((inv.check_receiver||'me')==='me' ? '✅ Sent' : '✅ Received')
+      : ((inv.check_receiver||'me')==='me' ? '⏳ Pending' : '⏳ They Owe Me');
+    return '<div class="invoice-row" onclick="openInvoiceDetail(\'' + inv.id + '\')">' +
+      '<div><div style="font-family:sans-serif;font-size:0.9rem;font-weight:500;">' + name + '<span style="color:var(--text3);font-size:0.78rem;"> #' + inv.sub_num + label + '</span></div>' +
+      '<div class="inv-date">' + (inv.auction_date || '?') + ' · ' + status + '</div></div>' +
+      '<div class="inv-amount ' + (inv.my_commission >= 0 ? 'green' : 'red') + '">' + fmt(inv.my_commission) + '</div></div>';
   }).join('');
 }
 
-// ─── CLIENTS ─────────────────────────────────────────────────────────
+// ─── CLIENTS ──────────────────────────────────────────────────────────
 function renderClients() {
   const q = (document.getElementById('client-search')?.value || '').toLowerCase();
-  const filtered = appData.clients.filter(c => c.name.toLowerCase().includes(q) || c.subs.some(s => String(s.num).includes(q)));
+  const filtered = appClients.filter(c =>
+    c.name.toLowerCase().includes(q) ||
+    (c.subs || []).some(s => String(s.num).includes(q) || (s.label||'').toLowerCase().includes(q))
+  ).sort((a,b) => a.name.localeCompare(b.name));
+
   const el = document.getElementById('clients-list');
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">' +
+    '<span class="section-title" style="margin:0;">' + filtered.length + ' clients</span>' +
+    '<button class="btn-sm primary" onclick="openModal(\'add-client-modal\')">+ Add Client</button></div>';
 
-  let html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem;">
-    <span class="section-title" style="margin:0;">${filtered.length} clients</span>
-    <button class="btn-sm primary" onclick="openModal('add-client-modal')">+ Add Client</button>
-  </div>`;
-
-  if (filtered.length === 0) {
+  if (!filtered.length) {
     html += '<div class="empty-state"><p>No clients found.</p></div>';
   } else {
     html += filtered.map(c => renderClientCard(c)).join('');
@@ -648,60 +722,57 @@ function renderClients() {
 
 function renderClientCard(c) {
   const isOpen = expandedClients[c.id];
-  const totalOut = c.subs.reduce((s, sub) => s + getOutstandingForSub(sub.num), 0);
-  const configured = c.subs.filter(s => s.pct !== null).length;
-  const badge = configured === c.subs.length
-    ? `<span class="badge badge-green">Configured</span>`
-    : `<span class="badge badge-warn">${c.subs.length - configured} to configure</span>`;
+  const subs = c.subs || [];
+  const contacts = c.contacts || [];
+  const configured = subs.filter(s => s.pct !== null).length;
+  const totalOut = appInvoices.filter(i => subs.some(s => s.num == i.sub_num) && !i.paid).reduce((s, i) => s + (i.my_commission || 0), 0);
+  const badge = configured === subs.length && subs.length > 0
+    ? '<span class="badge badge-green">✓ Configured</span>'
+    : '<span class="badge badge-warn">' + (subs.length - configured) + ' to setup</span>';
 
-  let subsHtml = '';
+  let bodyHtml = '';
   if (isOpen) {
-    subsHtml = `<div class="card-body" style="padding-top:0.75rem;">` +
-      c.subs.map(s => {
-        const invs = getInvoicesForSub(s.num);
-        const out = getOutstandingForSub(s.num);
-        const config = s.pct !== null ? `${s.pct}% · ${s.basis === 'gross' ? 'Gross' : 'Net'}` : 'Not configured';
-        return `<div class="sub-row">
-          <div>
-            <div class="sub-name">Consignor #${s.num}${s.label ? ' — ' + s.label : ''}</div>
-            <div class="sub-id">${config} · ${invs.length} invoice(s) · ${fmt(out)} outstanding</div>
-          </div>
-          <div class="sub-actions">
-            <button class="btn-sm" onclick="openConfig('${c.id}',${s.num})">⚙️ Setup</button>
-            <button class="btn-sm" onclick="viewSubHistory('${c.id}',${s.num})">History</button>
-            <button class="btn-sm danger" onclick="deleteSub('${c.id}',${s.num})">🗑️ Delete #${s.num}</button>
-          </div>
-        </div>`;
+    // Contacts section
+    let contactsHtml = contacts.length
+      ? contacts.map((ct, idx) =>
+          '<div class="contact-row"><div class="contact-info"><div class="cname">👤 ' + ct.name + '</div>' +
+          '<div class="cdetail">' + (ct.phone ? '📞 ' + ct.phone : '') + (ct.phone && ct.email ? ' · ' : '') + (ct.email ? '✉️ ' + ct.email : '') + '</div></div>' +
+          '<button class="btn-sm danger" onclick="deleteContact(\'' + c.id + '\',' + idx + ')">🗑️</button></div>'
+        ).join('')
+      : '<p style="font-family:sans-serif;font-size:0.82rem;color:var(--text3);">No contacts added yet.</p>';
+
+    bodyHtml = '<div class="card-body">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">' +
+      '<span style="font-family:sans-serif;font-size:0.8rem;font-weight:600;color:var(--text2);">CONTACTS</span>' +
+      '<button class="btn-sm primary" onclick="openAddContact(\'' + c.id + '\')">+ Add Contact</button></div>' +
+      contactsHtml +
+      '<hr class="divider">' +
+      '<span style="font-family:sans-serif;font-size:0.8rem;font-weight:600;color:var(--text2);">CONSIGNOR NUMBERS</span>' +
+      subs.map(s => {
+        const invCount = appInvoices.filter(i => i.sub_num == s.num).length;
+        const cfg = s.pct !== null ? s.pct + '% · ' + (s.basis === 'gross' ? 'Gross' : 'Net') + ' · ' + (s.checkReceiver === 'them' ? '👤 They get check' : '🏦 I get check') : 'Not configured';
+        return '<div class="sub-row"><div><div class="sub-name">#' + s.num + (s.label ? ' — ' + s.label : '') + '</div>' +
+          '<div class="sub-meta">' + cfg + ' · ' + invCount + ' invoice(s)</div></div>' +
+          '<div class="sub-actions">' +
+          '<button class="btn-sm" onclick="openConfig(\'' + c.id + '\',' + s.num + ')">⚙️ Setup</button>' +
+          '<button class="btn-sm" onclick="filterHistoryBySub(' + s.num + ')">History</button>' +
+          '<button class="btn-sm danger" onclick="deleteSub(\'' + c.id + '\',' + s.num + ')">🗑️</button>' +
+          '</div></div>';
       }).join('') +
-      `<div style="margin-top:0.75rem;">
-        <button class="btn-sm" onclick="openAddSub('${c.id}')">+ Add Sub Number</button>
-        <button class="btn-sm" onclick="openEditContact('${c.id}')" style="margin-left:0.4rem;">✏️ Edit Contact</button>
-        <button class="btn-sm danger" onclick="deleteClient('${c.id}')" style="margin-left:0.4rem;">Delete Client</button>
-      </div>
-    </div>`;
+      '<div style="margin-top:0.75rem;display:flex;gap:0.5rem;flex-wrap:wrap;">' +
+      '<button class="btn-sm" onclick="openAddSub(\'' + c.id + '\')">+ Add Sub Number</button>' +
+      '<button class="btn-sm danger" onclick="deleteClient(\'' + c.id + '\')">Delete Client</button>' +
+      '</div></div>';
   }
 
-  return `<div class="card">
-    <div class="card-header" onclick="toggleClient('${c.id}')">
-      <div>
-        <div class="client-name">${c.name}</div>
-        <div class="client-meta">${c.subs.map(s => '#' + s.num + (s.label ? ' (' + s.label + ')' : '')).join(', ')} · ${fmt(totalOut)} outstanding</div>
-        ${(function(){ 
-          if(!c.contact || (!c.contact.personName && !c.contact.phone && !c.contact.email)) return '';
-          let parts = [];
-          if(c.contact.personName) parts.push('👤 ' + c.contact.personName);
-          if(c.contact.phone) parts.push('📞 ' + c.contact.phone);
-          if(c.contact.email) parts.push('✉️ ' + c.contact.email);
-          return '<div class="client-meta" style="margin-top:0.15rem;">' + parts.join(' · ') + '</div>';
-        })()}
-      </div>
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        ${badge}
-        <span class="chevron ${isOpen ? 'open' : ''}">▶</span>
-      </div>
-    </div>
-    ${subsHtml}
-  </div>`;
+  return '<div class="card">' +
+    '<div class="card-header" onclick="toggleClient(\'' + c.id + '\')">' +
+    '<div><div class="client-name">' + c.name + '</div>' +
+    '<div class="client-meta">' + subs.map(s => '#' + s.num + (s.label ? ' (' + s.label + ')' : '')).join(', ') +
+    ' · ' + fmt(totalOut) + ' outstanding</div></div>' +
+    '<div style="display:flex;align-items:center;gap:0.5rem;">' + badge +
+    '<i class="chevron ' + (isOpen ? 'open' : '') + '">▶</i></div></div>' +
+    bodyHtml + '</div>';
 }
 
 function toggleClient(id) {
@@ -709,263 +780,265 @@ function toggleClient(id) {
   renderClients();
 }
 
-function deleteSub(clientId, subNum) {
-  if (!confirm('Delete Consignor #' + subNum + '? This will also delete all their invoices.')) return;
-  const c = appData.clients.find(x => x.id === clientId);
-  if (!c) return;
-  c.subs = c.subs.filter(s => s.num !== subNum);
-  appData.invoices = appData.invoices.filter(i => i.subNum !== subNum);
-  // If no subs left, remove the whole client
-  if (c.subs.length === 0) {
-    appData.clients = appData.clients.filter(x => x.id !== clientId);
-  }
-  saveData();
-  renderClients();
-  renderDashboard();
+// ─── CONTACTS ─────────────────────────────────────────────────────────
+let currentAddContactClientId = null;
+
+function openAddContact(clientId) {
+  currentAddContactClientId = clientId;
+  const c = appClients.find(x => x.id === clientId);
+  document.getElementById('add-contact-title').textContent = 'Add Contact — ' + c.name;
+  document.getElementById('contact-name').value = '';
+  document.getElementById('contact-phone').value = '';
+  document.getElementById('contact-email').value = '';
+  openModal('add-contact-modal');
 }
 
-function deleteClient(id) {
-  if (!confirm('Delete this client and all their invoices?')) return;
-  const c = appData.clients.find(x => x.id === id);
-  if (c) {
-    const nums = c.subs.map(s => s.num);
-    appData.invoices = appData.invoices.filter(i => !nums.includes(i.subNum));
-  }
-  appData.clients = appData.clients.filter(x => x.id !== id);
-  saveData();
+async function saveContact() {
+  const name = document.getElementById('contact-name').value.trim();
+  if (!name) { alert('Please enter a contact name.'); return; }
+  const c = appClients.find(x => x.id === currentAddContactClientId);
+  const contacts = [...(c.contacts || []), {
+    name,
+    phone: document.getElementById('contact-phone').value.trim(),
+    email: document.getElementById('contact-email').value.trim()
+  }];
+  await sbClient.from('clients').update({ contacts }).eq('id', c.id);
+  c.contacts = contacts;
+  closeModal('add-contact-modal');
   renderClients();
-  renderDashboard();
 }
 
-// ─── CONFIG MODAL ────────────────────────────────────────────────────
+async function deleteContact(clientId, idx) {
+  if (!confirm('Delete this contact?')) return;
+  const c = appClients.find(x => x.id === clientId);
+  const contacts = (c.contacts || []).filter((_, i) => i !== idx);
+  await sbClient.from('clients').update({ contacts }).eq('id', c.id);
+  c.contacts = contacts;
+  renderClients();
+}
+
+// ─── CONFIG ───────────────────────────────────────────────────────────
 function openConfig(clientId, subNum) {
   const match = findSubByNum(subNum);
   if (!match) return;
-  currentConfigTarget = { clientId, subNum };
-  document.getElementById('config-modal-title').textContent = `Configure #${subNum} — ${match.client.name}`;
-  document.getElementById('config-modal-body').innerHTML = `
-    <div class="form-group">
-      <label>Label / Nickname <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
-      <input type="text" id="cfg-label" placeholder="e.g. Main Account, Warehouse, Returns..." value="${match.sub.label || ''}" />
-    </div>
-    <div class="form-group">
-      <label>Commission Percentage (%)</label>
-      <input type="number" id="cfg-pct" step="0.1" min="0" max="100" value="${match.sub.pct !== null ? match.sub.pct : ''}" placeholder="e.g. 15" />
-    </div>
-    <div class="form-group">
-      <label>Calculate Commission Based On</label>
-      <select id="cfg-basis">
-        <option value="gross" ${match.sub.basis === 'gross' ? 'selected' : ''}>Gross (Total Invoice Sale Price)</option>
-        <option value="net" ${match.sub.basis === 'net' ? 'selected' : ''}>Net (Amount Paid to Consignor)</option>
-      </select>
-    </div>
-    <div class="form-group">
-      <label>Who Receives the Auction House Check?</label>
-      <select id="cfg-receiver">
-        <option value="me" ${(match.sub.checkReceiver || 'me') === 'me' ? 'selected' : ''}>🏦 I receive the check — I send them their money</option>
-        <option value="them" ${match.sub.checkReceiver === 'them' ? 'selected' : ''}>👤 They receive the check — they send me my commission</option>
-      </select>
-    </div>
-    <p style="font-size:0.8rem;color:var(--text2);font-family:sans-serif;margin-top:0.5rem;">
-      Example PDF shows: Gross = $2,044.00 · Net = $1,573.88
-    </p>`;
+  currentConfigSub = { clientId, subNum };
+  document.getElementById('config-title').textContent = 'Setup #' + subNum + ' — ' + match.client.name;
+  const s = match.sub;
+  document.getElementById('config-body').innerHTML =
+    '<div class="form-group"><label>Label / Nickname <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>' +
+    '<input type="text" id="cfg-label" placeholder="e.g. Main, Returns, Warehouse" value="' + (s.label||'') + '" /></div>' +
+    '<div class="form-group"><label>Commission %</label>' +
+    '<input type="number" id="cfg-pct" step="0.1" min="0" max="100" value="' + (s.pct !== null ? s.pct : '') + '" placeholder="e.g. 15" /></div>' +
+    '<div class="form-group"><label>Calculate On</label><select id="cfg-basis">' +
+    '<option value="gross"' + (s.basis === 'gross' ? ' selected' : '') + '>Gross (Total Invoice Sale Price)</option>' +
+    '<option value="net"' + (s.basis === 'net' ? ' selected' : '') + '>Net (Amount Paid to Consignor)</option>' +
+    '</select></div>' +
+    '<div class="form-group"><label>Who Receives the Auction House Check?</label><select id="cfg-receiver">' +
+    '<option value="me"' + ((s.checkReceiver||'me') === 'me' ? ' selected' : '') + '>🏦 I receive the check — I send them their money</option>' +
+    '<option value="them"' + (s.checkReceiver === 'them' ? ' selected' : '') + '>👤 They receive the check — they send me my commission</option>' +
+    '</select></div>';
   openModal('config-modal');
 }
 
-function saveConfig() {
+async function saveConfig() {
   const pct = parseFloat(document.getElementById('cfg-pct').value);
-  const basis = document.getElementById('cfg-basis').value;
-  const checkReceiver = document.getElementById('cfg-receiver').value;
-  if (isNaN(pct) || pct < 0 || pct > 100) { alert('Please enter a valid percentage.'); return; }
-  const { clientId, subNum } = currentConfigTarget;
-  const c = appData.clients.find(x => x.id === clientId);
-  const s = c.subs.find(x => x.num == subNum);
-  s.label = document.getElementById('cfg-label').value.trim();
-  s.pct = pct;
-  s.basis = basis;
-  s.checkReceiver = checkReceiver;
-  saveData();
+  if (isNaN(pct) || pct < 0 || pct > 100) { alert('Enter a valid percentage.'); return; }
+  const { clientId, subNum } = currentConfigSub;
+  const c = appClients.find(x => x.id === clientId);
+  const subs = c.subs.map(s => s.num == subNum ? {
+    ...s,
+    label: document.getElementById('cfg-label').value.trim(),
+    pct,
+    basis: document.getElementById('cfg-basis').value,
+    checkReceiver: document.getElementById('cfg-receiver').value
+  } : s);
+  await sbClient.from('clients').update({ subs }).eq('id', clientId);
+  c.subs = subs;
   closeModal('config-modal');
   renderClients();
 }
 
-// ─── ADD CLIENT ──────────────────────────────────────────────────────
-function addNewClient() {
+// ─── ADD CLIENT ───────────────────────────────────────────────────────
+async function addNewClient() {
   const name = document.getElementById('new-client-name').value.trim();
   const num = parseInt(document.getElementById('new-client-num').value);
   if (!name) { alert('Please enter a client name.'); return; }
   if (isNaN(num)) { alert('Please enter a consignor number.'); return; }
   if (findSubByNum(num)) { alert('That consignor number already exists.'); return; }
-  const id = 'c' + Date.now();
-  const contact = {
-    personName: document.getElementById('new-client-person').value.trim(),
-    phone: document.getElementById('new-client-phone').value.trim(),
-    email: document.getElementById('new-client-email').value.trim()
-  };
-  appData.clients.push({ id, name, contact, subs: [{ num, pct: null, basis: null }] });
-  saveData();
+  const { data } = await sbClient.from('clients').insert({
+    user_id: currentUser.id, name,
+    subs: [{num, pct:null, basis:null, checkReceiver:'me', label:''}],
+    contacts: []
+  }).select().single();
+  if (data) appClients.push(data);
+  appClients.sort((a,b) => a.name.localeCompare(b.name));
   closeModal('add-client-modal');
   document.getElementById('new-client-name').value = '';
   document.getElementById('new-client-num').value = '';
-  document.getElementById('new-client-person').value = '';
-  document.getElementById('new-client-phone').value = '';
-  document.getElementById('new-client-email').value = '';
   renderClients();
 }
 
-// ─── ADD SUB NUMBER ──────────────────────────────────────────────────
+// ─── ADD SUB ──────────────────────────────────────────────────────────
 function openAddSub(clientId) {
-  currentAddSubClient = clientId;
-  const c = appData.clients.find(x => x.id === clientId);
-  document.getElementById('add-sub-title').textContent = `Add Sub Number — ${c.name}`;
+  currentAddSubClientId = clientId;
+  const c = appClients.find(x => x.id === clientId);
+  document.getElementById('add-sub-title').textContent = 'Add Sub Number — ' + c.name;
   document.getElementById('new-sub-num').value = '';
   openModal('add-sub-modal');
 }
 
-function saveNewSub() {
+async function saveNewSub() {
   const num = parseInt(document.getElementById('new-sub-num').value);
   if (isNaN(num)) { alert('Please enter a valid number.'); return; }
   if (findSubByNum(num)) { alert('That consignor number already exists.'); return; }
-  const c = appData.clients.find(x => x.id === currentAddSubClient);
-  c.subs.push({ num, pct: null, basis: null });
-  saveData();
-  closeModal('add-sub-modal');
+  const c = appClients.find(x => x.id === currentAddSubClientId);
+  const subs = [...c.subs, {num, pct:null, basis:null, checkReceiver:'me', label:''}];
+  await sbClient.from('clients').update({ subs }).eq('id', c.id);
+  c.subs = subs;
   expandedClients[c.id] = true;
+  closeModal('add-sub-modal');
   renderClients();
 }
 
-// ─── HISTORY ─────────────────────────────────────────────────────────
+// ─── DELETE ───────────────────────────────────────────────────────────
+async function deleteSub(clientId, subNum) {
+  if (!confirm('Delete Consignor #' + subNum + ' and all their invoices?')) return;
+  const c = appClients.find(x => x.id === clientId);
+  const subs = c.subs.filter(s => s.num != subNum);
+  await sbClient.from('invoices').delete().eq('sub_num', subNum).eq('user_id', currentUser.id);
+  if (subs.length === 0) {
+    await sbClient.from('clients').delete().eq('id', clientId);
+    appClients = appClients.filter(x => x.id !== clientId);
+  } else {
+    await sbClient.from('clients').update({ subs }).eq('id', clientId);
+    c.subs = subs;
+  }
+  appInvoices = appInvoices.filter(i => i.sub_num != subNum);
+  renderClients(); renderDashboard();
+}
+
+async function deleteClient(id) {
+  if (!confirm('Delete this client and ALL their invoices?')) return;
+  const c = appClients.find(x => x.id === id);
+  if (c) {
+    const nums = (c.subs||[]).map(s => s.num);
+    for (const n of nums) await sbClient.from('invoices').delete().eq('sub_num', n).eq('user_id', currentUser.id);
+    appInvoices = appInvoices.filter(i => !nums.includes(i.sub_num));
+  }
+  await sbClient.from('clients').delete().eq('id', id);
+  appClients = appClients.filter(x => x.id !== id);
+  renderClients(); renderDashboard();
+}
+
+// ─── HISTORY ──────────────────────────────────────────────────────────
 function renderHistory() {
   const q = (document.getElementById('history-search')?.value || '').toLowerCase();
-  const sorted = [...appData.invoices].sort((a,b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
-  const filtered = sorted.filter(i => {
-    const match = findSubByNum(i.subNum);
+  const filtered = appInvoices.filter(i => {
+    const match = findSubByNum(i.sub_num);
     const name = match ? match.client.name.toLowerCase() : '';
-    return name.includes(q) || String(i.subNum).includes(q);
+    return name.includes(q) || String(i.sub_num).includes(q);
   });
-
   const el = document.getElementById('history-list');
-  if (filtered.length === 0) {
-    el.innerHTML = '<div class="empty-state"><div class="big">📋</div><p>No invoices yet.</p></div>';
-    return;
+  if (!filtered.length) {
+    el.innerHTML = '<div class="empty-state"><div class="big">📋</div><p>No invoices yet.</p></div>'; return;
   }
-
   el.innerHTML = filtered.map(inv => {
-    const match = findSubByNum(inv.subNum);
+    const match = findSubByNum(inv.sub_num);
     const name = match ? match.client.name : 'Unknown';
-    return `<div class="invoice-row" style="cursor:pointer;" onclick="openInvoiceDetail('${inv.id}')">
-      <div style="flex:1;">
-        <div style="font-family:sans-serif;font-size:0.9rem;font-weight:500;">${name}</div>
-        <div class="invoice-date">#${inv.subNum} · ${inv.auctionDate || '?'} · <label class="toggle-paid" onclick="event.stopPropagation()"><input type="checkbox" ${inv.paid?'checked':''} onchange="togglePaid('${inv.id}',this.checked)" /> ${inv.paid ? ((inv.checkReceiver||'me')==='me'?'✅ Sent':'✅ Received') : ((inv.checkReceiver||'me')==='me'?'⏳ Pending':'⏳ They Owe Me')}</label></div>
-      </div>
-      <div class="invoice-amount ${inv.myCommission >= 0 ? 'owed-to-me' : 'i-owe'}">${fmtSigned(inv.myCommission)}</div>
-    </div>`;
+    const label = match && match.sub && match.sub.label ? ' — ' + match.sub.label : '';
+    const status = inv.paid
+      ? ((inv.check_receiver||'me')==='me' ? '✅ Sent' : '✅ Received')
+      : ((inv.check_receiver||'me')==='me' ? '⏳ Pending' : '⏳ They Owe Me');
+    return '<div class="invoice-row" onclick="openInvoiceDetail(\'' + inv.id + '\')">' +
+      '<div style="flex:1;"><div style="font-family:sans-serif;font-size:0.9rem;font-weight:500;">' + name + '</div>' +
+      '<div class="inv-date">#' + inv.sub_num + label + ' · ' + (inv.auction_date||'?') + ' · <label class="toggle-paid" onclick="event.stopPropagation()"><input type="checkbox" ' + (inv.paid?'checked':'') + ' onchange="togglePaid(\'' + inv.id + '\',this.checked)" /> ' + status + '</label></div></div>' +
+      '<div class="inv-amount ' + ((inv.my_commission||0) >= 0 ? 'green' : 'red') + '">' + fmt(inv.my_commission) + '</div></div>';
   }).join('');
 }
 
-function togglePaid(invId, val) {
-  const inv = appData.invoices.find(i => i.id === invId);
-  if (inv) { inv.paid = val; saveData(); renderDashboard(); }
-}
-
-function viewSubHistory(clientId, subNum) {
+function filterHistoryBySub(subNum) {
   showTab('history');
-  setTimeout(() => {
-    document.getElementById('history-search').value = String(subNum);
-    renderHistory();
-  }, 50);
+  setTimeout(() => { document.getElementById('history-search').value = String(subNum); renderHistory(); }, 50);
 }
 
-// ─── INVOICE DETAIL ──────────────────────────────────────────────────
-function openInvoiceDetail(invId) {
-  const inv = appData.invoices.find(i => i.id === invId);
-  if (!inv) return;
-  const match = findSubByNum(inv.subNum);
-  const name = match ? match.client.name : 'Unknown';
-  document.getElementById('invoice-modal-title').textContent = `${name} — #${inv.subNum}`;
-  document.getElementById('invoice-modal-body').innerHTML = `
-    <div class="result-card ${inv.myCommission >= 0 ? 'owes-me' : 'i-owe'}">
-      <div class="result-line"><span>Auction Date</span><span>${inv.auctionDate || '—'}</span></div>
-      <div class="result-line"><span>CO # (PDF)</span><span>${inv.coNum || '—'}</span></div>
-      <div class="result-line"><span>Total Sale (Gross)</span><span>${fmt(inv.grossSale)}</span></div>
-      <div class="result-line"><span>Net Payout</span><span>${fmt(inv.netPayout)}</span></div>
-      <div class="result-line"><span>Commission Base</span><span>${inv.basis === 'gross' ? 'Gross' : 'Net'}</span></div>
-      <div class="result-line"><span>Commission Rate</span><span>${inv.pct}%</span></div>
-      <div class="result-line" style="padding-top:0.4rem;">
-        <span style="font-weight:600;">💰 Your Commission</span>
-        <span style="font-weight:600;color:var(--accent);">${fmt(inv.myCommission)}</span>
-      </div>
-      ${(inv.checkReceiver || 'me') === 'me' ? 
-        '<div class="result-line total negative"><span>📤 Send To Client</span><span class="amount" style="color:var(--danger);">' + fmt(inv.netPayout - inv.myCommission) + '</span></div>' :
-        '<div class="result-line total"><span>💰 They Owe You Commission</span><span class="amount" style="color:var(--accent);">' + fmt(inv.myCommission) + '</span></div>'
-      }
-    </div>
-    <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem;font-family:sans-serif;font-size:0.9rem;">
-      <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
-        <input type="checkbox" ${inv.paid?'checked':''} onchange="togglePaid('${inv.id}',this.checked);document.getElementById('invoice-modal-body').querySelector('input').checked=this.checked;" style="width:18px;height:18px;accent-color:var(--accent);" />
-        ${(inv.checkReceiver || 'me') === 'me' ? 'Mark as Sent (check sent to client)' : 'Mark as Received (they sent my commission)'}
-      </label>
-    </div>
-    <div style="margin-top:1rem;">
-      <button class="btn-sm danger" onclick="deleteInvoice('${inv.id}')">Delete Invoice</button>
-    </div>`;
-  openModal('invoice-modal');
-}
-
-function deleteInvoice(invId) {
-  if (!confirm('Delete this invoice?')) return;
-  appData.invoices = appData.invoices.filter(i => i.id !== invId);
-  saveData();
-  closeModal('invoice-modal');
-  renderHistory();
+async function togglePaid(invId, val) {
+  await sbClient.from('invoices').update({ paid: val }).eq('id', invId);
+  const inv = appInvoices.find(i => i.id === invId);
+  if (inv) inv.paid = val;
   renderDashboard();
 }
 
-// ─── MODAL UTILS ─────────────────────────────────────────────────────
-function openModal(id) { document.getElementById(id).classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
-document.querySelectorAll('.modal-overlay').forEach(m => {
-  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
-});
-
-// ─── PDF PROCESSING ──────────────────────────────────────────────────
-function handleDrag(e) { e.preventDefault(); document.getElementById('upload-area').classList.add('drag'); }
-
-function handleAnyFile(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  e.target.value = '';
-  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-    processPDF(file);
-  } else {
-    processImage(file);
-  }
+// ─── INVOICE DETAIL ───────────────────────────────────────────────────
+function openInvoiceDetail(invId) {
+  const inv = appInvoices.find(i => i.id === invId);
+  if (!inv) return;
+  const match = findSubByNum(inv.sub_num);
+  const name = match ? match.client.name : 'Unknown';
+  const label = match && match.sub && match.sub.label ? ' — ' + match.sub.label : '';
+  const cr = inv.check_receiver || 'me';
+  const sendToClient = (inv.net_payout||0) - (inv.my_commission||0);
+  document.getElementById('invoice-modal-title').textContent = name + ' #' + inv.sub_num;
+  document.getElementById('invoice-modal-body').innerHTML =
+    '<div class="result-card">' +
+    '<div class="result-line"><span>Client</span><span>' + name + label + '</span></div>' +
+    '<div class="result-line"><span>Consignor #</span><span>' + inv.sub_num + '</span></div>' +
+    '<div class="result-line"><span>CO #</span><span>' + (inv.co_num||'—') + '</span></div>' +
+    '<div class="result-line"><span>Auction Date</span><span>' + (inv.auction_date||'—') + '</span></div>' +
+    '<div class="result-line"><span>Gross Sale</span><span>' + fmt(inv.gross_sale) + '</span></div>' +
+    '<div class="result-line"><span>Net Payout</span><span>' + fmt(inv.net_payout) + '</span></div>' +
+    '<div class="result-line"><span>Base · Rate</span><span>' + (inv.basis==='gross'?'Gross':'Net') + ' · ' + inv.pct + '%</span></div>' +
+    '<div class="result-line" style="padding-top:0.4rem;"><span style="font-weight:600;">💰 Your Commission</span><span style="font-weight:600;color:var(--accent);">' + fmt(inv.my_commission) + '</span></div>' +
+    (cr === 'me'
+      ? '<div class="result-line total"><span>📤 Send To Client</span><span style="color:var(--danger);font-weight:600;">' + fmt(sendToClient) + '</span></div>'
+      : '<div class="result-line total"><span>💰 They Owe You</span><span style="color:var(--accent);font-weight:600;">' + fmt(inv.my_commission) + '</span></div>') +
+    '</div>' +
+    '<div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem;font-family:sans-serif;font-size:0.9rem;">' +
+    '<label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">' +
+    '<input type="checkbox" ' + (inv.paid?'checked':'') + ' onchange="togglePaid(\'' + inv.id + '\',this.checked)" style="width:18px;height:18px;accent-color:var(--accent);" />' +
+    (cr === 'me' ? 'Mark as Sent' : 'Mark as Received') + '</label></div>' +
+    '<div style="margin-top:0.75rem;"><button class="btn-sm danger" onclick="deleteInvoice(\'' + inv.id + '\')">Delete Invoice</button></div>';
+  openModal('invoice-modal');
 }
+
+async function deleteInvoice(invId) {
+  if (!confirm('Delete this invoice?')) return;
+  await sbClient.from('invoices').delete().eq('id', invId);
+  appInvoices = appInvoices.filter(i => i.id !== invId);
+  closeModal('invoice-modal');
+  renderHistory(); renderDashboard();
+}
+
+// ─── UPLOAD ───────────────────────────────────────────────────────────
+function handleDrag(e) { e.preventDefault(); document.getElementById('upload-area').classList.add('drag'); }
 function handleDrop(e) {
   e.preventDefault();
   document.getElementById('upload-area').classList.remove('drag');
   const file = e.dataTransfer.files[0];
   if (!file) return;
+  routeFile(file);
+}
+function handleAnyFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  routeFile(file);
+}
+function routeFile(file) {
   if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
     processPDF(file);
   } else {
     processImage(file);
   }
 }
-function handleFileSelect(e) {
-  const file = e.target.files[0];
-  if (file) processPDF(file);
-  e.target.value = '';
-}
 
+// ─── PDF PROCESSING ───────────────────────────────────────────────────
 function processPDF(file) {
   const el = document.getElementById('upload-result');
-  el.innerHTML = `<div class="processing"><div class="spinner"></div><p>Reading PDF...</p></div>`;
-
+  el.innerHTML = '<div class="processing"><div class="spinner"></div><p>Reading PDF...</p></div>';
   const reader = new FileReader();
-  reader.onload = function(e) {
-    const typedArray = new Uint8Array(e.target.result);
-    loadPDFLib(typedArray, el);
+  reader.onload = e => {
+    const data = new Uint8Array(e.target.result);
+    loadPDFLib(data, el);
   };
   reader.readAsArrayBuffer(file);
 }
@@ -986,8 +1059,7 @@ async function extractPDFText(data, el) {
   try {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf = await pdfjsLib.getDocument({ data }).promise;
-    // Collect ALL text items with their X,Y positions from every page
-    const tokens = []; // {x, y, text}
+    const tokens = [];
     for (let p = 1; p <= pdf.numPages; p++) {
       const page = await pdf.getPage(p);
       const tc = await page.getTextContent();
@@ -999,209 +1071,162 @@ async function extractPDFText(data, el) {
         tokens.push({ x, y, text: str });
       }
     }
-    if (!tokens.length) {
-      el.innerHTML = '<div class="alert alert-error">Could not read text from this PDF.</div>';
-      return;
-    }
-    parseSettlement(tokens, el);
+    if (!tokens.length) { el.innerHTML = '<div class="alert alert-error">Could not read text from PDF.</div>'; return; }
+    parsePDFTokens(tokens, el);
   } catch(err) {
-    el.innerHTML = `<div class="alert alert-error">Error reading PDF: ${err.message}</div>`;
+    el.innerHTML = '<div class="alert alert-error">Error reading PDF: ' + err.message + '</div>';
   }
 }
 
-// Find a token whose text matches a label, then find the closest token to its right on same Y
-function findValueNear(tokens, labelPattern, xMin) {
-  const label = tokens.find(t => labelPattern.test(t.text));
-  if (!label) return null;
-  // Look for numeric value on same Y row (within 5px) to the right
-  const sameRow = tokens.filter(t =>
-    Math.abs(t.y - label.y) <= 5 && t.x > (xMin !== undefined ? xMin : label.x)
-  );
-  for (const t of sameRow.sort((a,b) => b.x - a.x)) {
-    const raw = t.text.replace(/[,$\s()\\]/g, '');
-    const n = parseFloat(raw);
-    if (!isNaN(n) && n > 0) return n;
-  }
-  return null;
-}
-
-function findTextValue(tokens, labelPattern) {
-  const label = tokens.find(t => labelPattern.test(t.text));
-  if (!label) return null;
-  const sameRow = tokens.filter(t => Math.abs(t.y - label.y) <= 5 && t.x > label.x);
-  if (!sameRow.length) {
-    // Value might be embedded in same token
-    const m = label.text.match(labelPattern);
-    return m && m[1] ? m[1].trim() : null;
-  }
-  return sameRow.sort((a,b) => a.x - b.x)[0].text;
-}
-
-function parseSettlement(tokens, el) {
-  // Normalize all text for matching
+function parsePDFTokens(tokens, el) {
   const norm = tokens.map(t => ({ ...t, text: t.text.replace(/\s+/g, ' ').trim() }));
 
-  // Consignor number — label and value may be in same token "Consignor: 1360"
   let subNum = null;
   for (const t of norm) {
     const m = t.text.match(/Consignor:\s*(\d+)/i);
     if (m) { subNum = parseInt(m[1]); break; }
   }
-  // Also try: label token + nearby number token
-  if (!subNum) {
-    const lbl = norm.find(t => /^Consignor:?$/i.test(t.text));
-    if (lbl) {
-      const nearby = norm.filter(t => Math.abs(t.y - lbl.y) <= 5 && t.x > lbl.x);
-      for (const t of nearby.sort((a,b) => a.x - b.x)) {
-        const n = parseInt(t.text);
-        if (!isNaN(n)) { subNum = n; break; }
-      }
-    }
-  }
 
-  // CO #
   let coNum = null;
   for (const t of norm) {
-    const m = t.text.match(/CO\s*#:?\s*(\d+)/i);
+    const m = t.text.match(/CO\s*#:\s*(\d+)/i);
     if (m) { coNum = m[1]; break; }
   }
   if (!coNum) {
     const lbl = norm.find(t => /^CO\s*#:?$/i.test(t.text));
     if (lbl) {
-      const nearby = norm.filter(t => Math.abs(t.y - lbl.y) <= 5 && t.x > lbl.x);
-      for (const t of nearby.sort((a,b) => a.x - b.x)) {
-        if (/^\d+$/.test(t.text)) { coNum = t.text; break; }
-      }
+      const near = norm.filter(t => Math.abs(t.y - lbl.y) <= 5 && t.x > lbl.x).sort((a,b) => a.x - b.x);
+      if (near.length) coNum = near[0].text;
     }
   }
 
-  // Auction date
   let auctionDate = null;
   for (const t of norm) {
     const m = t.text.match(/Auction:\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
     if (m) { auctionDate = m[1]; break; }
   }
 
-  // Gross = Total Invoice Sale Price
   const grossLbl = norm.find(t => /Total.*Invoice.*Sale.*Price/i.test(t.text));
   let gross = null;
   if (grossLbl) {
-    const sameRow = norm.filter(t => Math.abs(t.y - grossLbl.y) <= 5 && t.x > grossLbl.x);
-    for (const t of sameRow.sort((a,b) => b.x - a.x)) {
-      const raw = t.text.replace(/[,$\s]/g, '');
-      const n = parseFloat(raw);
-      if (!isNaN(n) && n > 0) { gross = n; break; }
-    }
+    const row = norm.filter(t => Math.abs(t.y - grossLbl.y) <= 5 && t.x > grossLbl.x).sort((a,b) => b.x - a.x);
+    for (const t of row) { const n = parseFloat(t.text.replace(/[,$\s]/g,'')); if (!isNaN(n) && n > 0) { gross = n; break; } }
   }
 
-  // Net = Total Due to Consignor
   const netLbl = norm.find(t => /Total.*Due.*Consignor/i.test(t.text));
   let net = null;
   if (netLbl) {
-    const sameRow = norm.filter(t => Math.abs(t.y - netLbl.y) <= 5 && t.x > netLbl.x);
-    for (const t of sameRow.sort((a,b) => b.x - a.x)) {
-      const raw = t.text.replace(/[,$\s]/g, '');
-      const n = parseFloat(raw);
-      if (!isNaN(n) && n > 0) { net = n; break; }
-    }
+    const row = norm.filter(t => Math.abs(t.y - netLbl.y) <= 5 && t.x > netLbl.x).sort((a,b) => b.x - a.x);
+    for (const t of row) { const n = parseFloat(t.text.replace(/[,$\s]/g,'')); if (!isNaN(n) && n > 0) { net = n; break; } }
   }
-  // Fallback: Balance line
   if (!net) {
     const balLbl = norm.find(t => /^Balance:?$/i.test(t.text));
     if (balLbl) {
-      const sameRow = norm.filter(t => Math.abs(t.y - balLbl.y) <= 5 && t.x > balLbl.x);
-      for (const t of sameRow.sort((a,b) => b.x - a.x)) {
-        const raw = t.text.replace(/[,$\s$]/g, '');
-        const n = parseFloat(raw);
-        if (!isNaN(n) && n > 0) { net = n; break; }
-      }
+      const row = norm.filter(t => Math.abs(t.y - balLbl.y) <= 5 && t.x > balLbl.x).sort((a,b) => b.x - a.x);
+      for (const t of row) { const n = parseFloat(t.text.replace(/[,$\s$]/g,'')); if (!isNaN(n) && n > 0) { net = n; break; } }
     }
   }
 
-  if (!subNum) {
-    el.innerHTML = `<div class="alert alert-error">Could not find Consignor number in this PDF.</div>`;
-    return;
-  }
-
-  const match = findSubByNum(subNum);
-  if (!match) {
-    el.innerHTML = `<div class="alert alert-error">Consignor #${subNum} is not in your client list. Please add them first in the Clients tab.</div>`;
-    return;
-  }
-
-  const { client, sub } = match;
-
-  if (sub.pct === null || sub.basis === null) {
-    el.innerHTML = `<div class="alert alert-error">
-      Consignor #${subNum} (${client.name}) is not configured yet.
-      <button class="btn-sm primary" style="margin-left:0.5rem;" onclick="openConfig('${client.id}',${subNum});document.getElementById('upload-result').innerHTML='';">Configure Now</button>
-    </div>`;
-    return;
-  }
-
-  const base = sub.basis === 'gross' ? gross : net;
-  if (base === null) {
-    el.innerHTML = `<div class="alert alert-error">Could not extract the ${sub.basis === 'gross' ? 'gross sale' : 'net payout'} amount from this PDF. Gross found: ${gross}, Net found: ${net}</div>`;
-    return;
-  }
-
-  const myCommission = parseFloat(((sub.pct / 100) * base).toFixed(2));
-
-  el.innerHTML = `
-    <div class="alert alert-success" style="margin-top:1rem;">✅ Found: ${client.name} — Consignor #${subNum}</div>
-    <div class="result-card owes-me">
-      <div class="result-line"><span>Client</span><span>${client.name}</span></div>
-      <div class="result-line"><span>Consignor #</span><span>${subNum}</span></div>
-      <div class="result-line"><span>CO #</span><span>${coNum || '—'}</span></div>
-      <div class="result-line"><span>Auction Date</span><span>${auctionDate || '—'}</span></div>
-      <div class="result-line"><span>Gross Sale</span><span>${gross !== null ? fmt(gross) : '—'}</span></div>
-      <div class="result-line"><span>Net Payout</span><span>${net !== null ? fmt(net) : '—'}</span></div>
-      <div class="result-line"><span>Your Commission Base</span><span>${sub.basis === 'gross' ? 'Gross' : 'Net'} = ${fmt(base)}</span></div>
-      <div class="result-line"><span>Rate</span><span>${sub.pct}%</span></div>
-      <div class="result-line" style="padding-top:0.6rem;">
-        <span style="font-weight:600;">💰 Your Commission</span>
-        <span style="font-weight:600;color:var(--accent);">${fmt(myCommission)}</span>
-      </div>
-      <div class="result-line total negative">
-        <span>📤 Send To Client</span>
-        <span class="amount" style="color:var(--danger);">${fmt(net - myCommission)}</span>
-      </div>
-    </div>
-    <div style="display:flex;gap:0.6rem;margin-top:1rem;">
-      <button class="btn-sm primary" onclick="saveInvoice(${subNum},'${coNum}','${auctionDate}',${gross},${net},${myCommission},'${sub.basis}',${sub.pct})">💾 Save Invoice</button>
-      <button class="btn-sm" onclick="document.getElementById('upload-result').innerHTML='';">Clear</button>
-    </div>`;
+  showResult(subNum, coNum, auctionDate, gross, net, el);
 }
 
-function saveInvoice(subNum, coNum, auctionDate, grossSale, netPayout, myCommission, basis, pct) {
+// ─── IMAGE PROCESSING ─────────────────────────────────────────────────
+async function processImage(file) {
+  const el = document.getElementById('upload-result');
+  const apiKey = localStorage.getItem(API_KEY_STORE);
+  if (!apiKey) {
+    el.innerHTML = '<div class="alert alert-error">No Gemini API key set. Please add it in Settings first.</div>'; return;
+  }
+  el.innerHTML = '<div class="processing"><div class="spinner"></div><p>Reading photo with AI...</p></div>';
+  try {
+    const base64 = await fileToBase64(file);
+    const mediaType = file.type || 'image/jpeg';
+    const prompt = 'You are a data extractor. Look at this auction settlement document and extract exactly these 5 values. Reply with RAW JSON only - no markdown, no code blocks, no explanation. Just the JSON object itself.\n\nExtract: consignorNum (integer), coNum (string), auctionDate (string MM/DD/YY), grossSale (number - labeled Total Invoice Sale Price), netPayout (number - labeled Total Due to Consignor or Balance).\n\nExample reply format:\n{"consignorNum":1360,"coNum":"56062","auctionDate":"04/17/25","grossSale":2044.00,"netPayout":1573.88}';
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      { method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ contents:[{ parts:[{ inline_data:{ mime_type:mediaType, data:base64 } },{ text:prompt }] }], generationConfig:{ temperature:0, maxOutputTokens:1024 } }) }
+    );
+    if (!response.ok) { const err = await response.json(); throw new Error(err.error?.message || 'Gemini API error'); }
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) throw new Error('Empty response from Gemini');
+    const cleaned = text.replace(/```json/g,'').replace(/```/g,'').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse AI response: ' + text);
+    const parsed = JSON.parse(jsonMatch[0]);
+    showResult(parsed.consignorNum, parsed.coNum, parsed.auctionDate, parsed.grossSale, parsed.netPayout, el);
+  } catch(err) {
+    el.innerHTML = '<div class="alert alert-error">Error reading image: ' + err.message + '</div>';
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ─── SHOW RESULT ──────────────────────────────────────────────────────
+function showResult(subNum, coNum, auctionDate, gross, net, el) {
+  if (!subNum) { el.innerHTML = '<div class="alert alert-error">Could not find Consignor number.</div>'; return; }
   const match = findSubByNum(subNum);
-  const checkReceiver = match ? (match.sub.checkReceiver || 'me') : 'me';
+  if (!match) { el.innerHTML = '<div class="alert alert-error">Consignor #' + subNum + ' is not in your client list.</div>'; return; }
+  const { client, sub } = match;
+  if (sub.pct === null || sub.basis === null) {
+    el.innerHTML = '<div class="alert alert-error">Consignor #' + subNum + ' (' + client.name + ') is not configured yet. <button class="btn-sm primary" style="margin-left:0.5rem;" onclick="openConfig(\'' + client.id + '\',' + subNum + ')">Configure Now</button></div>'; return;
+  }
+  const base = sub.basis === 'gross' ? gross : net;
+  if (!base) { el.innerHTML = '<div class="alert alert-error">Could not extract the ' + (sub.basis === 'gross' ? 'gross' : 'net') + ' amount.</div>'; return; }
+  const commission = parseFloat(((sub.pct / 100) * base).toFixed(2));
+  const sendToClient = parseFloat(((net||0) - commission).toFixed(2));
+  const cr = sub.checkReceiver || 'me';
+  el.innerHTML =
+    '<div class="alert alert-success" style="margin-top:1rem;">✅ Found: ' + client.name + ' — #' + subNum + (sub.label ? ' (' + sub.label + ')' : '') + '</div>' +
+    '<div class="result-card">' +
+    '<div class="result-line"><span>Client</span><span>' + client.name + (sub.label ? ' — ' + sub.label : '') + '</span></div>' +
+    '<div class="result-line"><span>Consignor #</span><span>' + subNum + '</span></div>' +
+    '<div class="result-line"><span>CO #</span><span>' + (coNum||'—') + '</span></div>' +
+    '<div class="result-line"><span>Auction Date</span><span>' + (auctionDate||'—') + '</span></div>' +
+    '<div class="result-line"><span>Gross Sale</span><span>' + (gross !== null ? fmt(gross) : '—') + '</span></div>' +
+    '<div class="result-line"><span>Net Payout</span><span>' + (net !== null ? fmt(net) : '—') + '</span></div>' +
+    '<div class="result-line"><span>' + (sub.basis==='gross'?'Gross':'Net') + ' · ' + sub.pct + '%</span><span>' + fmt(base) + '</span></div>' +
+    '<div class="result-line" style="padding-top:0.4rem;"><span style="font-weight:600;">💰 Your Commission</span><span style="font-weight:600;color:var(--accent);">' + fmt(commission) + '</span></div>' +
+    (cr === 'me'
+      ? '<div class="result-line total"><span>📤 Send To Client</span><span style="color:var(--danger);font-weight:600;">' + fmt(sendToClient) + '</span></div>'
+      : '<div class="result-line total"><span>💰 They Owe You Commission</span><span style="color:var(--accent);font-weight:600;">' + fmt(commission) + '</span></div>') +
+    '</div>' +
+    '<div style="display:flex;gap:0.6rem;margin-top:1rem;">' +
+    '<button class="btn-sm primary" onclick="saveInvoice(' + subNum + ',\'' + (coNum||'') + '\',\'' + (auctionDate||'') + '\',' + (gross||0) + ',' + (net||0) + ',' + commission + ',\'' + sub.basis + '\',' + sub.pct + ',\'' + cr + '\')">💾 Save Invoice</button>' +
+    '<button class="btn-sm" onclick="document.getElementById(\'upload-result\').innerHTML=\'\'">Clear</button></div>';
+}
+
+async function saveInvoice(subNum, coNum, auctionDate, gross, net, commission, basis, pct, cr) {
+  const match = findSubByNum(subNum);
   const inv = {
-    id: 'inv_' + Date.now(),
-    subNum, coNum, auctionDate,
-    grossSale: grossSale || 0,
-    netPayout: netPayout || 0,
-    myCommission, basis, pct,
-    checkReceiver,
-    paid: false,
-    uploadedAt: new Date().toISOString()
+    user_id: currentUser.id,
+    client_id: match ? match.client.id : null,
+    sub_num: subNum, co_num: coNum, auction_date: auctionDate,
+    gross_sale: gross, net_payout: net, my_commission: commission,
+    basis, pct, check_receiver: cr, paid: false
   };
-  appData.invoices.push(inv);
-  saveData();
-  document.getElementById('upload-result').innerHTML = `<div class="alert alert-success" style="margin-top:1rem;">✅ Invoice saved! View it in History or Dashboard.</div>`;
+  const { data } = await sbClient.from('invoices').insert(inv).select().single();
+  if (data) appInvoices.unshift(data);
+  document.getElementById('upload-result').innerHTML = '<div class="alert alert-success" style="margin-top:1rem;">✅ Invoice saved!</div>';
   renderDashboard();
 }
 
-const API_KEY_STORE = 'auc_apikey';
+// ─── SETTINGS ─────────────────────────────────────────────────────────
+const API_KEY_STORE_KEY = API_KEY_STORE;
 
 function saveApiKey() {
   const key = document.getElementById('api-key-input').value.trim();
-  if (!key.startsWith('AIza')) {
-    document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-error">Invalid key format. Should start with AIza</div>';
-    return;
-  }
+  if (!key.startsWith('AIza')) { document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-error">Invalid key. Should start with AIza</div>'; return; }
   localStorage.setItem(API_KEY_STORE, key);
-  document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-success">✅ API key saved!</div>';
+  document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-success">✅ Gemini API key saved!</div>';
   document.getElementById('api-key-input').value = '';
   updateApiKeyStatus();
   setTimeout(() => { document.getElementById('api-key-alert').innerHTML = ''; }, 3000);
@@ -1211,8 +1236,6 @@ function clearApiKey() {
   localStorage.removeItem(API_KEY_STORE);
   document.getElementById('api-key-input').value = '';
   updateApiKeyStatus();
-  document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-success">Key removed.</div>';
-  setTimeout(() => { document.getElementById('api-key-alert').innerHTML = ''; }, 2000);
 }
 
 function toggleShowKey() {
@@ -1226,185 +1249,61 @@ function updateApiKeyStatus() {
   const el = document.getElementById('api-key-status');
   if (!el) return;
   const key = localStorage.getItem(API_KEY_STORE);
-  el.textContent = key ? '✅ Gemini API key is set — photo uploads enabled' : '⚠️ No Gemini key — photo uploads disabled';
+  el.textContent = key ? '✅ Gemini key set — photo uploads enabled' : '⚠️ No key set — photo uploads disabled';
   el.style.color = key ? 'var(--accent)' : 'var(--warn)';
 }
 
-// Call on settings tab open
-const origShowTab = showTab;
-
-function handleImageSelect(e) {
-  const file = e.target.files[0];
-  if (file) processImage(file);
-  e.target.value = '';
-}
-
-async function processImage(file) {
-  const el = document.getElementById('upload-result');
-  const apiKey = localStorage.getItem(API_KEY_STORE);
-  if (!apiKey) {
-    el.innerHTML = '<div class="alert alert-error">No API key set. Please add your Google Gemini API key in Settings first.</div>';
-    return;
-  }
-  el.innerHTML = '<div class="processing"><div class="spinner"></div><p>Reading photo with AI...</p></div>';
-
-  try {
-    const base64 = await fileToBase64(file);
-    const mediaType = file.type || 'image/jpeg';
-
-    const prompt = 'You are a data extractor. Look at this auction settlement document and extract exactly these 5 values. Reply with RAW JSON only - no markdown, no code blocks, no explanation. Just the JSON object itself.\n\nExtract: consignorNum (integer), coNum (string), auctionDate (string MM/DD/YY), grossSale (number - labeled Total Invoice Sale Price), netPayout (number - labeled Total Due to Consignor or Balance).\n\nExample reply format:\n{"consignorNum":1360,"coNum":"56062","auctionDate":"04/17/25","grossSale":2044.00,"netPayout":1573.88}';
-
-    const response = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { inline_data: { mime_type: mediaType, data: base64 } },
-              { text: prompt }
-            ]
-          }],
-          generationConfig: { temperature: 0, maxOutputTokens: 1024 }
-        })
-      }
-    );
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'Gemini API error');
-    }
-
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-    if (!text) throw new Error('Empty response from Gemini');
-
-    // Strip markdown code blocks if present
-    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
-    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Could not parse AI response: ' + text);
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    parseSettlementData(parsed.consignorNum, parsed.coNum, parsed.auctionDate, parsed.grossSale, parsed.netPayout, el);
-  } catch(err) {
-    el.innerHTML = '<div class="alert alert-error">Error reading image: ' + err.message + '</div>';
-  }
-}
-
-function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
-function parseSettlementData(subNum, coNum, auctionDate, gross, net, el) {
-  if (!subNum) {
-    el.innerHTML = '<div class="alert alert-error">Could not find Consignor number in this document.</div>';
-    return;
-  }
-  const match = findSubByNum(subNum);
-  if (!match) {
-    el.innerHTML = `<div class="alert alert-error">Consignor #${subNum} is not in your client list. Please add them first.</div>`;
-    return;
-  }
-  const { client, sub } = match;
-  if (sub.pct === null || sub.basis === null) {
-    el.innerHTML = `<div class="alert alert-error">Consignor #${subNum} (${client.name}) is not configured yet.
-      <button class="btn-sm primary" style="margin-left:0.5rem;" onclick="openConfig('${client.id}',${subNum});document.getElementById('upload-result').innerHTML='';">Configure Now</button>
-    </div>`;
-    return;
-  }
-  const base = sub.basis === 'gross' ? gross : net;
-  if (!base) {
-    el.innerHTML = `<div class="alert alert-error">Could not extract the ${sub.basis === 'gross' ? 'gross sale' : 'net payout'} amount.</div>`;
-    return;
-  }
-  const myCommission = parseFloat(((sub.pct / 100) * base).toFixed(2));
-  const sendToClient = parseFloat((net - myCommission).toFixed(2));
-  const checkReceiver = sub.checkReceiver || 'me';
-
-  el.innerHTML = `
-    <div class="alert alert-success" style="margin-top:1rem;">✅ Found: ${client.name} — Consignor #${subNum}${sub.label ? ' (' + sub.label + ')' : ''}</div>
-    <div class="result-card owes-me">
-      <div class="result-line"><span>Client</span><span>${client.name}${sub.label ? ' — ' + sub.label : ''}</span></div>
-      <div class="result-line"><span>Consignor #</span><span>${subNum}</span></div>
-      <div class="result-line"><span>CO #</span><span>${coNum || '—'}</span></div>
-      <div class="result-line"><span>Auction Date</span><span>${auctionDate || '—'}</span></div>
-      <div class="result-line"><span>Gross Sale</span><span>${gross !== null ? fmt(gross) : '—'}</span></div>
-      <div class="result-line"><span>Net Payout</span><span>${net !== null ? fmt(net) : '—'}</span></div>
-      <div class="result-line"><span>Commission Base</span><span>${sub.basis === 'gross' ? 'Gross' : 'Net'} = ${fmt(base)}</span></div>
-      <div class="result-line"><span>Rate</span><span>${sub.pct}%</span></div>
-      <div class="result-line" style="padding-top:0.4rem;">
-        <span style="font-weight:600;">💰 Your Commission</span>
-        <span style="font-weight:600;color:var(--accent);">${fmt(myCommission)}</span>
-      </div>
-      ${checkReceiver === 'me'
-        ? '<div class="result-line total negative"><span>📤 Send To Client</span><span class="amount" style="color:var(--danger);">' + fmt(sendToClient) + '</span></div>'
-        : '<div class="result-line total"><span>💰 They Owe You Commission</span><span class="amount" style="color:var(--accent);">' + fmt(myCommission) + '</span></div>'
-      }
-    </div>
-    <div style="display:flex;gap:0.6rem;margin-top:1rem;">
-      <button class="btn-sm primary" onclick="saveInvoice(${subNum},'${coNum}','${auctionDate}',${gross},${net},${myCommission},'${sub.basis}',${sub.pct})">💾 Save Invoice</button>
-      <button class="btn-sm" onclick="document.getElementById('upload-result').innerHTML='';">Clear</button>
-    </div>`;
-}
-
-let currentEditContactId = null;
-
-function openEditContact(clientId) {
-  currentEditContactId = clientId;
-  const c = appData.clients.find(x => x.id === clientId);
-  if (!c.contact) c.contact = {personName:'',phone:'',email:''};
-  document.getElementById('edit-contact-title').textContent = c.name + ' — Contact Info';
-  document.getElementById('edit-contact-person').value = c.contact.personName || '';
-  document.getElementById('edit-contact-phone').value = c.contact.phone || '';
-  document.getElementById('edit-contact-email').value = c.contact.email || '';
-  openModal('edit-contact-modal');
-}
-
-function saveContact() {
-  const c = appData.clients.find(x => x.id === currentEditContactId);
-  if (!c.contact) c.contact = {};
-  c.contact.personName = document.getElementById('edit-contact-person').value.trim();
-  c.contact.phone = document.getElementById('edit-contact-phone').value.trim();
-  c.contact.email = document.getElementById('edit-contact-email').value.trim();
-  saveData();
-  closeModal('edit-contact-modal');
-  renderClients();
-}
-
-function changePassword() {
-  const oldPw = document.getElementById('pw-old').value;
-  const newPw = document.getElementById('pw-new').value;
-  const confirmPw = document.getElementById('pw-confirm').value;
-  const alertEl = document.getElementById('pw-change-alert');
-  const stored = localStorage.getItem(PASS_KEY);
-
-  if (oldPw !== stored) {
-    alertEl.innerHTML = '<div class="alert alert-error">Current password is incorrect.</div>';
-    return;
-  }
-  if (newPw.length < 4) {
-    alertEl.innerHTML = '<div class="alert alert-error">New password must be at least 4 characters.</div>';
-    return;
-  }
-  if (newPw !== confirmPw) {
-    alertEl.innerHTML = '<div class="alert alert-error">New passwords do not match.</div>';
-    return;
-  }
-  localStorage.setItem(PASS_KEY, newPw);
-  document.getElementById('pw-old').value = '';
+async function changePassword() {
+  const nw = document.getElementById('pw-new').value;
+  const confirm = document.getElementById('pw-confirm').value;
+  const el = document.getElementById('pw-change-alert');
+  if (nw.length < 6) { el.innerHTML = '<div class="alert alert-error">Password must be at least 6 characters.</div>'; return; }
+  if (nw !== confirm) { el.innerHTML = '<div class="alert alert-error">Passwords do not match.</div>'; return; }
+  const { error } = await sbClient.auth.updateUser({ password: nw });
+  if (error) { el.innerHTML = '<div class="alert alert-error">' + error.message + '</div>'; return; }
   document.getElementById('pw-new').value = '';
   document.getElementById('pw-confirm').value = '';
-  alertEl.innerHTML = '<div class="alert alert-success">✅ Password successfully changed!</div>';
+  el.innerHTML = '<div class="alert alert-success">✅ Password successfully changed!</div>';
+  setTimeout(() => { el.innerHTML = ''; }, 3000);
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────
+async function exportData() {
+  const backup = { clients: appClients, invoices: appInvoices, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'auction-backup-' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  try {
+    const backup = JSON.parse(text);
+    if (!backup.clients || !backup.invoices) { alert('Invalid backup file.'); return; }
+    if (!confirm('This will import ' + backup.clients.length + ' clients and ' + backup.invoices.length + ' invoices. Continue?')) return;
+    // Insert clients
+    for (const c of backup.clients) {
+      const { id, ...rest } = c;
+      await sbClient.from('clients').upsert({ ...rest, user_id: currentUser.id });
+    }
+    // Insert invoices
+    for (const inv of backup.invoices) {
+      const { id, ...rest } = inv;
+      await sbClient.from('invoices').upsert({ ...rest, user_id: currentUser.id });
+    }
+    await loadData();
+    renderDashboard(); renderClients();
+    alert('✅ Import complete!');
+  } catch(err) {
+    alert('Import failed: ' + err.message);
+  }
 }
 </script>
-  <footer style="text-align:center;padding:1.5rem;font-family:sans-serif;font-size:0.78rem;color:var(--text3);">
-    Built by Hirschprung Digital © 2026
-  </footer>
 </body>
 </html>
