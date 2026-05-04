@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+     <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -170,6 +170,7 @@
     <input type="password" id="pw-input" placeholder="Enter password" />
     <button class="btn-primary" onclick="doLogin()">Sign In</button>
     <p class="error-msg" id="login-error"></p>
+    <p id="login-hint" style="font-family:sans-serif;font-size:0.78rem;color:var(--text3);margin-top:1rem;"></p>
   </div>
 </div>
 
@@ -195,10 +196,24 @@
     <div id="tab-dashboard" class="tab-content active">
       <div class="outstanding-total">
         <div>
-          <div class="label">Total Outstanding (owed to you)</div>
+          <div class="label">Total Commission Earned</div>
           <div class="amount" id="dash-total">$0.00</div>
         </div>
         <div style="font-size:1.8rem;">💰</div>
+      </div>
+      <div class="outstanding-total" style="background:var(--danger);margin-bottom:0.75rem;">
+        <div>
+          <div class="label">📤 Total To Send Out (I have the check)</div>
+          <div class="amount" id="dash-you-owe">$0.00</div>
+        </div>
+        <div style="font-size:1.8rem;">📤</div>
+      </div>
+      <div class="outstanding-total" style="background:var(--warn);margin-bottom:0.75rem;">
+        <div>
+          <div class="label">💰 Commissions Owed To Me (they have the check)</div>
+          <div class="amount" id="dash-comm-owed">$0.00</div>
+        </div>
+        <div style="font-size:1.8rem;">⏳</div>
       </div>
       <div class="stats-grid">
         <div class="stat-card">
@@ -206,11 +221,15 @@
           <div class="value" id="dash-clients">0</div>
         </div>
         <div class="stat-card">
-          <div class="label">Unpaid Invoices</div>
+          <div class="label">Total Consignor #s</div>
+          <div class="value" id="dash-subs">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Pending Checks</div>
           <div class="value red" id="dash-unpaid">0</div>
         </div>
         <div class="stat-card">
-          <div class="label">Paid This Month</div>
+          <div class="label">Sent This Month</div>
           <div class="value green" id="dash-paid-month">$0</div>
         </div>
         <div class="stat-card">
@@ -232,11 +251,11 @@
     <div id="tab-upload" class="tab-content">
       <div class="section-title">Upload Settlement PDF</div>
       <div class="card" style="padding:1.25rem;">
-        <div class="upload-area" id="upload-area" onclick="document.getElementById('pdf-file').click()" ondragover="handleDrag(event)" ondrop="handleDrop(event)">
-          <div class="icon">📄</div>
-          <p><strong>Tap to select PDF</strong> or drag and drop here</p>
-          <p style="margin-top:0.3rem; font-size:0.8rem; color:var(--text3);">Consignor Settlement PDF</p>
-          <input type="file" id="pdf-file" accept=".pdf,application/pdf" onchange="handleFileSelect(event)" />
+        <div class="upload-area" id="upload-area" onclick="document.getElementById('any-file').click()" ondragover="handleDrag(event)" ondrop="handleDrop(event)">
+          <div class="icon">📄📷</div>
+          <p><strong>Tap to upload PDF or Photo</strong></p>
+          <p style="margin-top:0.3rem;font-size:0.78rem;color:var(--text3);">Supports PDF files and photos (JPG, PNG, HEIC)</p>
+          <input type="file" id="any-file" accept=".pdf,application/pdf,image/*,.heic,.HEIC" onchange="handleAnyFile(event)" />
         </div>
         <div id="upload-result"></div>
       </div>
@@ -244,13 +263,28 @@
 
     <!-- HISTORY TAB -->
     <div id="tab-history" class="tab-content">
-      <input class="search-bar" type="text" placeholder="Search invoices by client name..." id="history-search" oninput="renderHistory()" />
+      <input class="search-bar" type="text" placeholder="Search by client name..." id="history-search" oninput="renderHistory()" />
       <div id="history-list"></div>
     </div>
 
   
     <!-- SETTINGS TAB -->
     <div id="tab-settings" class="tab-content">
+      <div class="section-title">Google Gemini API Key</div>
+      <div class="card" style="padding:1.25rem;max-width:400px;margin-bottom:1.25rem;">
+        <p style="font-family:sans-serif;font-size:0.85rem;color:var(--text2);margin-bottom:1rem;">Required for photo/image uploads. Free — get your key at <strong>aistudio.google.com</strong></p>
+        <div id="api-key-alert"></div>
+        <div class="form-group">
+          <label>API Key</label>
+          <input type="password" id="api-key-input" placeholder="AIzaSy..." />
+        </div>
+        <div style="display:flex;gap:0.6rem;">
+          <button class="btn-sm primary" onclick="saveApiKey()">Save Key</button>
+          <button class="btn-sm" onclick="toggleShowKey()">Show/Hide</button>
+          <button class="btn-sm danger" onclick="clearApiKey()">Remove Key</button>
+        </div>
+        <p id="api-key-status" style="font-family:sans-serif;font-size:0.78rem;color:var(--text3);margin-top:0.75rem;"></p>
+      </div>
       <div class="section-title">Change Password</div>
       <div class="card" style="padding:1.25rem;max-width:400px;">
         <div id="pw-change-alert"></div>
@@ -319,10 +353,50 @@
         <label>Consignor Number</label>
         <input type="number" id="new-client-num" placeholder="e.g. 730" />
       </div>
+      <div class="form-group">
+        <label>Contact Name <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
+        <input type="text" id="new-client-person" placeholder="e.g. John Smith" />
+      </div>
+      <div class="form-group">
+        <label>Phone <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
+        <input type="tel" id="new-client-phone" placeholder="e.g. 555-1234" />
+      </div>
+      <div class="form-group">
+        <label>Email <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
+        <input type="email" id="new-client-email" placeholder="e.g. john@example.com" />
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-sm" onclick="closeModal('add-client-modal')">Cancel</button>
       <button class="btn-sm primary" onclick="addNewClient()">Add Client</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Edit Contact -->
+<div class="modal-overlay" id="edit-contact-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="edit-contact-title">Edit Contact Info</h3>
+      <button class="btn-close" onclick="closeModal('edit-contact-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Contact Name <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
+        <input type="text" id="edit-contact-person" placeholder="e.g. John Smith" />
+      </div>
+      <div class="form-group">
+        <label>Phone <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
+        <input type="tel" id="edit-contact-phone" placeholder="e.g. 555-1234" />
+      </div>
+      <div class="form-group">
+        <label>Email <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
+        <input type="email" id="edit-contact-email" placeholder="e.g. john@example.com" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm" onclick="closeModal('edit-contact-modal')">Cancel</button>
+      <button class="btn-sm primary" onclick="saveContact()">Save</button>
     </div>
   </div>
 </div>
@@ -353,66 +427,66 @@ const PASS_KEY = 'auc_pass';
 const DATA_KEY = 'auc_data';
 
 const DEFAULT_CLIENTS = [
-  { id: 'c1', name: "Y&R Trading", subs: [{num:2195,pct:null,basis:null}] },
-  { id: 'c2', name: "Hamilton", subs: [{num:2035,pct:null,basis:null}] },
-  { id: 'c3', name: "BHRS", subs: [{num:730,pct:null,basis:null}] },
-  { id: 'c4', name: "Alltell", subs: [{num:1325,pct:null,basis:null}] },
-  { id: 'c5', name: "Crosson", subs: [{num:975,pct:null,basis:null}] },
-  { id: 'c6', name: "Koolmore", subs: [{num:625,pct:null,basis:null}] },
-  { id: 'c7', name: "Leacco", subs: [{num:2025,pct:null,basis:null}] },
-  { id: 'c8', name: "EGGKIT", subs: [{num:2080,pct:null,basis:null}] },
-  { id: 'c9', name: "Schnuer Eatontown", subs: [{num:918,pct:null,basis:null}] },
-  { id: 'c10', name: "Pemberton", subs: [{num:600,pct:null,basis:null},{num:100,pct:null,basis:null}] },
-  { id: 'c11', name: "Hoocoo", subs: [{num:650,pct:null,basis:null}] },
-  { id: 'c12', name: "Impact Tech", subs: [{num:700,pct:null,basis:null},{num:1477,pct:null,basis:null}] },
-  { id: 'c13', name: "KB", subs: [{num:2155,pct:null,basis:null}] },
-  { id: 'c14', name: "Strictly Kosher", subs: [{num:1308,pct:null,basis:null}] },
-  { id: 'c15', name: "Marcys", subs: [{num:1390,pct:null,basis:null}] },
-  { id: 'c16', name: "Open Box", subs: [{num:1360,pct:null,basis:null}] },
-  { id: 'c17', name: "Wellington", subs: [{num:101,pct:null,basis:null}] },
-  { id: 'c18', name: "GT Imports", subs: [{num:1025,pct:null,basis:null}] },
-  { id: 'c19', name: "Leather Luxury", subs: [{num:1340,pct:null,basis:null}] },
-  { id: 'c20', name: "Daves Electronics", subs: [{num:1450,pct:null,basis:null}] },
-  { id: 'c21', name: "Focus Camera", subs: [{num:1270,pct:null,basis:null}] },
-  { id: 'c22', name: "Monsey Watches", subs: [{num:2085,pct:null,basis:null}] },
-  { id: 'c23', name: "Gluck Watches", subs: [{num:2095,pct:null,basis:null}] },
-  { id: 'c24', name: "Connect Distributors", subs: [{num:3590,pct:null,basis:null}] },
-  { id: 'c25', name: "LEB", subs: [{num:2175,pct:null,basis:null}] },
-  { id: 'c26', name: "Apex Returns", subs: [{num:2015,pct:null,basis:null}] },
-  { id: 'c27', name: "Sky Traders", subs: [{num:3115,pct:null,basis:null}] },
-  { id: 'c28', name: "Lakeside Distributors", subs: [{num:3175,pct:null,basis:null}] },
-  { id: 'c29', name: "Ceri Med", subs: [{num:3125,pct:null,basis:null}] },
-  { id: 'c30', name: "OSMO Returns", subs: [{num:3160,pct:null,basis:null}] },
-  { id: 'c31', name: "Sam Solomon", subs: [{num:3135,pct:null,basis:null}] },
-  { id: 'c32', name: "Savvy Digs", subs: [{num:3145,pct:null,basis:null}] },
-  { id: 'c33', name: "Liberty Returns", subs: [{num:2185,pct:null,basis:null}] },
-  { id: 'c34', name: "Ibuy", subs: [{num:2000,pct:null,basis:null}] },
-  { id: 'c35', name: "LNP", subs: [{num:2065,pct:null,basis:null}] },
-  { id: 'c36', name: "World Class", subs: [{num:1650,pct:null,basis:null}] },
-  { id: 'c37', name: "Fashion House", subs: [{num:1580,pct:null,basis:null}] },
-  { id: 'c38', name: "Brands 4 Less", subs: [{num:1550,pct:null,basis:null}] },
-  { id: 'c39', name: "Sound Around", subs: [{num:1530,pct:null,basis:null}] },
-  { id: 'c40', name: "Jazzer Shack", subs: [{num:2050,pct:null,basis:null}] },
-  { id: 'c41', name: "Tress", subs: [{num:3155,pct:null,basis:null}] },
-  { id: 'c42', name: "Spruce Distribution", subs: [{num:2055,pct:null,basis:null}] },
-  { id: 'c43', name: "Lifepro Fitness", subs: [{num:1610,pct:null,basis:null}] },
-  { id: 'c44', name: "Fresh Finest", subs: [{num:1945,pct:null,basis:null}] },
-  { id: 'c45', name: "Fesco", subs: [{num:1985,pct:null,basis:null}] },
-  { id: 'c46', name: "PrepZone", subs: [{num:1995,pct:null,basis:null}] },
-  { id: 'c47', name: "Seasonal Packaging", subs: [{num:2070,pct:null,basis:null}] },
-  { id: 'c48', name: "Slick Returns Moshe Horowitz", subs: [{num:2090,pct:null,basis:null}] },
-  { id: 'c49', name: "Trends Goods", subs: [{num:4305,pct:null,basis:null}] },
-  { id: 'c50', name: "Winners Trading", subs: [{num:3000,pct:null,basis:null}] },
-  { id: 'c51', name: "Returned Solutions", subs: [{num:2075,pct:null,basis:null}] },
-  { id: 'c52', name: "Buzz", subs: [{num:3075,pct:null,basis:null}] },
-  { id: 'c53', name: "Zola", subs: [{num:3085,pct:null,basis:null}] },
-  { id: 'c54', name: "Techro", subs: [{num:3035,pct:null,basis:null}] },
-  { id: 'c55', name: "Tpro", subs: [{num:2045,pct:null,basis:null}] },
-  { id: 'c56', name: "Kiva", subs: [{num:2012,pct:null,basis:null}] },
-  { id: 'c57', name: "Mixpresso", subs: [{num:2022,pct:null,basis:null}] },
-  { id: 'c58', name: "047LG", subs: [{num:2032,pct:null,basis:null}] },
-  { id: 'c59', name: "Merrigo", subs: [{num:2030,pct:null,basis:null}] },
-  { id: 'c60', name: "Unbeatable Sale", subs: [{num:1335,pct:null,basis:null}] }
+  { id: 'c1', name: 'Y&R Trading', contact:{personName:"",phone:"",email:""}, subs: [{num:2195,pct:null,basis:null}] },
+  { id: 'c2', name: 'Hamilton', contact:{personName:"",phone:"",email:""}, subs: [{num:2035,pct:null,basis:null}] },
+  { id: 'c3', name: 'BHRS', contact:{personName:"",phone:"",email:""}, subs: [{num:730,pct:null,basis:null}] },
+  { id: 'c4', name: 'Alltell', contact:{personName:"",phone:"",email:""}, subs: [{num:1325,pct:null,basis:null}] },
+  { id: 'c5', name: 'Crosson', contact:{personName:"",phone:"",email:""}, subs: [{num:975,pct:null,basis:null}] },
+  { id: 'c6', name: 'Koolmore', contact:{personName:"",phone:"",email:""}, subs: [{num:625,pct:null,basis:null}] },
+  { id: 'c7', name: 'Leacco', contact:{personName:"",phone:"",email:""}, subs: [{num:2025,pct:null,basis:null}] },
+  { id: 'c8', name: 'EGGKIT', contact:{personName:"",phone:"",email:""}, subs: [{num:2080,pct:null,basis:null}] },
+  { id: 'c9', name: 'Schnuer Eatontown', contact:{personName:"",phone:"",email:""}, subs: [{num:918,pct:null,basis:null}] },
+  { id: 'c10', name: 'Pemberton', contact:{personName:"",phone:"",email:""}, subs: [{num:600,pct:null,basis:null}, {num:100,pct:null,basis:null}] },
+  { id: 'c11', name: 'Hoocoo', contact:{personName:"",phone:"",email:""}, subs: [{num:650,pct:null,basis:null}] },
+  { id: 'c12', name: 'Impact Tech', contact:{personName:"",phone:"",email:""}, subs: [{num:700,pct:null,basis:null}, {num:1477,pct:null,basis:null}] },
+  { id: 'c13', name: 'KB', contact:{personName:"",phone:"",email:""}, subs: [{num:2155,pct:null,basis:null}] },
+  { id: 'c14', name: 'Strictly Kosher', contact:{personName:"",phone:"",email:""}, subs: [{num:1308,pct:null,basis:null}] },
+  { id: 'c15', name: 'Marcys', contact:{personName:"",phone:"",email:""}, subs: [{num:1390,pct:null,basis:null}] },
+  { id: 'c16', name: 'Open Box', contact:{personName:"",phone:"",email:""}, subs: [{num:1360,pct:null,basis:null}] },
+  { id: 'c17', name: 'Wellington', contact:{personName:"",phone:"",email:""}, subs: [{num:101,pct:null,basis:null}] },
+  { id: 'c18', name: 'GT Imports', contact:{personName:"",phone:"",email:""}, subs: [{num:1025,pct:null,basis:null}] },
+  { id: 'c19', name: 'Leather Luxury', contact:{personName:"",phone:"",email:""}, subs: [{num:1340,pct:null,basis:null}] },
+  { id: 'c20', name: 'Daves Electronics', contact:{personName:"",phone:"",email:""}, subs: [{num:1450,pct:null,basis:null}] },
+  { id: 'c21', name: 'Focus Camera', contact:{personName:"",phone:"",email:""}, subs: [{num:1270,pct:null,basis:null}] },
+  { id: 'c22', name: 'Monsey Watches', contact:{personName:"",phone:"",email:""}, subs: [{num:2085,pct:null,basis:null}] },
+  { id: 'c23', name: 'Gluck Watches', contact:{personName:"",phone:"",email:""}, subs: [{num:2095,pct:null,basis:null}] },
+  { id: 'c24', name: 'Connect Distributors', contact:{personName:"",phone:"",email:""}, subs: [{num:3590,pct:null,basis:null}] },
+  { id: 'c25', name: 'LEB', contact:{personName:"",phone:"",email:""}, subs: [{num:2175,pct:null,basis:null}] },
+  { id: 'c26', name: 'Apex Returns', contact:{personName:"",phone:"",email:""}, subs: [{num:2015,pct:null,basis:null}] },
+  { id: 'c27', name: 'Sky Traders', contact:{personName:"",phone:"",email:""}, subs: [{num:3115,pct:null,basis:null}] },
+  { id: 'c28', name: 'Lakeside Distributors', contact:{personName:"",phone:"",email:""}, subs: [{num:3175,pct:null,basis:null}] },
+  { id: 'c29', name: 'Ceri Med', contact:{personName:"",phone:"",email:""}, subs: [{num:3125,pct:null,basis:null}] },
+  { id: 'c30', name: 'OSMO Returns', contact:{personName:"",phone:"",email:""}, subs: [{num:3160,pct:null,basis:null}] },
+  { id: 'c31', name: 'Sam Solomon', contact:{personName:"",phone:"",email:""}, subs: [{num:3135,pct:null,basis:null}] },
+  { id: 'c32', name: 'Savvy Digs', contact:{personName:"",phone:"",email:""}, subs: [{num:3145,pct:null,basis:null}] },
+  { id: 'c33', name: 'Liberty Returns', contact:{personName:"",phone:"",email:""}, subs: [{num:2185,pct:null,basis:null}] },
+  { id: 'c34', name: 'Ibuy', contact:{personName:"",phone:"",email:""}, subs: [{num:2000,pct:null,basis:null}] },
+  { id: 'c35', name: 'LNP', contact:{personName:"",phone:"",email:""}, subs: [{num:2065,pct:null,basis:null}] },
+  { id: 'c36', name: 'World Class', contact:{personName:"",phone:"",email:""}, subs: [{num:1650,pct:null,basis:null}] },
+  { id: 'c37', name: 'Fashion House', contact:{personName:"",phone:"",email:""}, subs: [{num:1580,pct:null,basis:null}] },
+  { id: 'c38', name: 'Brands 4 Less', contact:{personName:"",phone:"",email:""}, subs: [{num:1550,pct:null,basis:null}] },
+  { id: 'c39', name: 'Sound Around', contact:{personName:"",phone:"",email:""}, subs: [{num:1530,pct:null,basis:null}] },
+  { id: 'c40', name: 'Jazzer Shack', contact:{personName:"",phone:"",email:""}, subs: [{num:2050,pct:null,basis:null}] },
+  { id: 'c41', name: 'Tress', contact:{personName:"",phone:"",email:""}, subs: [{num:3155,pct:null,basis:null}] },
+  { id: 'c42', name: 'Spruce Distribution', contact:{personName:"",phone:"",email:""}, subs: [{num:2055,pct:null,basis:null}] },
+  { id: 'c43', name: 'Lifepro Fitness', contact:{personName:"",phone:"",email:""}, subs: [{num:1610,pct:null,basis:null}] },
+  { id: 'c44', name: 'Fresh Finest', contact:{personName:"",phone:"",email:""}, subs: [{num:1945,pct:null,basis:null}] },
+  { id: 'c45', name: 'Fesco', contact:{personName:"",phone:"",email:""}, subs: [{num:1985,pct:null,basis:null}] },
+  { id: 'c46', name: 'PrepZone', contact:{personName:"",phone:"",email:""}, subs: [{num:1995,pct:null,basis:null}] },
+  { id: 'c47', name: 'Seasonal Packaging', contact:{personName:"",phone:"",email:""}, subs: [{num:2070,pct:null,basis:null}] },
+  { id: 'c48', name: 'Slick Returns Moshe Horowitz', contact:{personName:"",phone:"",email:""}, subs: [{num:2090,pct:null,basis:null}] },
+  { id: 'c49', name: 'Trends Goods', contact:{personName:"",phone:"",email:""}, subs: [{num:4305,pct:null,basis:null}] },
+  { id: 'c50', name: 'Winners Trading', contact:{personName:"",phone:"",email:""}, subs: [{num:3000,pct:null,basis:null}] },
+  { id: 'c51', name: 'Returned Solutions', contact:{personName:"",phone:"",email:""}, subs: [{num:2075,pct:null,basis:null}] },
+  { id: 'c52', name: 'Buzz', contact:{personName:"",phone:"",email:""}, subs: [{num:3075,pct:null,basis:null}] },
+  { id: 'c53', name: 'Zola', contact:{personName:"",phone:"",email:""}, subs: [{num:3085,pct:null,basis:null}] },
+  { id: 'c54', name: 'Techro', contact:{personName:"",phone:"",email:""}, subs: [{num:3035,pct:null,basis:null}] },
+  { id: 'c55', name: 'Tpro', contact:{personName:"",phone:"",email:""}, subs: [{num:2045,pct:null,basis:null}] },
+  { id: 'c56', name: 'Kiva', contact:{personName:"",phone:"",email:""}, subs: [{num:2012,pct:null,basis:null}] },
+  { id: 'c57', name: 'Mixpresso', contact:{personName:"",phone:"",email:""}, subs: [{num:2022,pct:null,basis:null}] },
+  { id: 'c58', name: '047LG', contact:{personName:"",phone:"",email:""}, subs: [{num:2032,pct:null,basis:null}] },
+  { id: 'c59', name: 'Merrigo', contact:{personName:"",phone:"",email:""}, subs: [{num:2030,pct:null,basis:null}] },
+  { id: 'c60', name: 'Unbeatable Sale', contact:{personName:"",phone:"",email:""}, subs: [{num:1335,pct:null,basis:null}] },
 ];
 
 let appData = { clients: [], invoices: [] };
@@ -450,6 +524,13 @@ function doLogin() {
   }
 }
 
+// Show hint on page load
+window.addEventListener('DOMContentLoaded', function() {
+  const stored = localStorage.getItem(PASS_KEY);
+  const hint = document.getElementById('login-hint');
+  if (!stored && hint) hint.textContent = 'First time? Enter any password to set it.';
+});
+
 document.getElementById('pw-input').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 function enterApp() {
@@ -477,6 +558,7 @@ function showTab(name) {
   if (name === 'clients') renderClients();
   if (name === 'history') renderHistory();
   if (name === 'upload') document.getElementById('upload-result').innerHTML = '';
+  if (name === 'settings') updateApiKeyStatus();
 }
 
 // ─── HELPERS ─────────────────────────────────────────────────────────
@@ -505,6 +587,9 @@ function renderDashboard() {
   const allInv = appData.invoices;
   const unpaid = allInv.filter(i => !i.paid);
   const totalOwed = unpaid.reduce((s, i) => s + i.myCommission, 0);
+  const totalToSendOut = unpaid.filter(i => (i.checkReceiver || 'me') === 'me').reduce((s, i) => s + (i.netPayout - i.myCommission), 0);
+  const totalCommissionOwedToMe = unpaid.filter(i => i.checkReceiver === 'them').reduce((s, i) => s + i.myCommission, 0);
+  const totalYouOwe = totalToSendOut;
   
   const now = new Date();
   const thisMonth = allInv.filter(i => {
@@ -514,7 +599,11 @@ function renderDashboard() {
   const paidMonth = thisMonth.reduce((s, i) => s + i.myCommission, 0);
 
   document.getElementById('dash-total').textContent = fmt(totalOwed);
+  document.getElementById('dash-you-owe').textContent = fmt(totalToSendOut);
+  document.getElementById('dash-comm-owed').textContent = fmt(totalCommissionOwedToMe);
+  const totalSubs = appData.clients.reduce((s, c) => s + c.subs.length, 0);
   document.getElementById('dash-clients').textContent = appData.clients.length;
+  document.getElementById('dash-subs').textContent = totalSubs;
   document.getElementById('dash-unpaid').textContent = unpaid.length;
   document.getElementById('dash-paid-month').textContent = fmt(paidMonth);
   document.getElementById('dash-total-inv').textContent = allInv.length;
@@ -530,8 +619,8 @@ function renderDashboard() {
     const name = match ? match.client.name : 'Unknown';
     return `<div class="invoice-row" onclick="openInvoiceDetail('${inv.id}')" style="cursor:pointer;">
       <div>
-        <div style="font-family:sans-serif;font-size:0.9rem;font-weight:500;">${name} <span style="color:var(--text3);font-size:0.78rem;">#${inv.subNum}</span></div>
-        <div class="invoice-date">${inv.auctionDate || 'Unknown date'} · ${inv.paid ? '✅ Paid' : '⏳ Unpaid'}</div>
+        <div style="font-family:sans-serif;font-size:0.9rem;font-weight:500;">${name} <span style="color:var(--text3);font-size:0.78rem;">#${inv.subNum}${(function(){ const m=findSubByNum(inv.subNum); return m && m.sub.label ? ' — '+m.sub.label : ''; })()} </span></div>
+        <div class="invoice-date">${inv.auctionDate || 'Unknown date'} · ${inv.paid ? ((inv.checkReceiver||'me')==='me'?'✅ Sent':'✅ Received') : ((inv.checkReceiver||'me')==='me'?'⏳ Pending':'⏳ They Owe Me')}</div>
       </div>
       <div class="invoice-amount ${inv.myCommission >= 0 ? 'owed-to-me' : 'i-owe'}">${fmtSigned(inv.myCommission)}</div>
     </div>`;
@@ -574,17 +663,19 @@ function renderClientCard(c) {
         const config = s.pct !== null ? `${s.pct}% · ${s.basis === 'gross' ? 'Gross' : 'Net'}` : 'Not configured';
         return `<div class="sub-row">
           <div>
-            <div class="sub-name">Consignor #${s.num}</div>
+            <div class="sub-name">Consignor #${s.num}${s.label ? ' — ' + s.label : ''}</div>
             <div class="sub-id">${config} · ${invs.length} invoice(s) · ${fmt(out)} outstanding</div>
           </div>
           <div class="sub-actions">
             <button class="btn-sm" onclick="openConfig('${c.id}',${s.num})">⚙️ Setup</button>
             <button class="btn-sm" onclick="viewSubHistory('${c.id}',${s.num})">History</button>
+            <button class="btn-sm danger" onclick="deleteSub('${c.id}',${s.num})">🗑️ Delete #${s.num}</button>
           </div>
         </div>`;
       }).join('') +
       `<div style="margin-top:0.75rem;">
         <button class="btn-sm" onclick="openAddSub('${c.id}')">+ Add Sub Number</button>
+        <button class="btn-sm" onclick="openEditContact('${c.id}')" style="margin-left:0.4rem;">✏️ Edit Contact</button>
         <button class="btn-sm danger" onclick="deleteClient('${c.id}')" style="margin-left:0.4rem;">Delete Client</button>
       </div>
     </div>`;
@@ -594,7 +685,15 @@ function renderClientCard(c) {
     <div class="card-header" onclick="toggleClient('${c.id}')">
       <div>
         <div class="client-name">${c.name}</div>
-        <div class="client-meta">${c.subs.map(s => '#' + s.num).join(', ')} · ${fmt(totalOut)} outstanding</div>
+        <div class="client-meta">${c.subs.map(s => '#' + s.num + (s.label ? ' (' + s.label + ')' : '')).join(', ')} · ${fmt(totalOut)} outstanding</div>
+        ${(function(){ 
+          if(!c.contact || (!c.contact.personName && !c.contact.phone && !c.contact.email)) return '';
+          let parts = [];
+          if(c.contact.personName) parts.push('👤 ' + c.contact.personName);
+          if(c.contact.phone) parts.push('📞 ' + c.contact.phone);
+          if(c.contact.email) parts.push('✉️ ' + c.contact.email);
+          return '<div class="client-meta" style="margin-top:0.15rem;">' + parts.join(' · ') + '</div>';
+        })()}
       </div>
       <div style="display:flex;align-items:center;gap:0.5rem;">
         ${badge}
@@ -608,6 +707,21 @@ function renderClientCard(c) {
 function toggleClient(id) {
   expandedClients[id] = !expandedClients[id];
   renderClients();
+}
+
+function deleteSub(clientId, subNum) {
+  if (!confirm('Delete Consignor #' + subNum + '? This will also delete all their invoices.')) return;
+  const c = appData.clients.find(x => x.id === clientId);
+  if (!c) return;
+  c.subs = c.subs.filter(s => s.num !== subNum);
+  appData.invoices = appData.invoices.filter(i => i.subNum !== subNum);
+  // If no subs left, remove the whole client
+  if (c.subs.length === 0) {
+    appData.clients = appData.clients.filter(x => x.id !== clientId);
+  }
+  saveData();
+  renderClients();
+  renderDashboard();
 }
 
 function deleteClient(id) {
@@ -631,6 +745,10 @@ function openConfig(clientId, subNum) {
   document.getElementById('config-modal-title').textContent = `Configure #${subNum} — ${match.client.name}`;
   document.getElementById('config-modal-body').innerHTML = `
     <div class="form-group">
+      <label>Label / Nickname <span style="color:var(--text3);font-size:0.78rem;">(optional)</span></label>
+      <input type="text" id="cfg-label" placeholder="e.g. Main Account, Warehouse, Returns..." value="${match.sub.label || ''}" />
+    </div>
+    <div class="form-group">
       <label>Commission Percentage (%)</label>
       <input type="number" id="cfg-pct" step="0.1" min="0" max="100" value="${match.sub.pct !== null ? match.sub.pct : ''}" placeholder="e.g. 15" />
     </div>
@@ -639,6 +757,13 @@ function openConfig(clientId, subNum) {
       <select id="cfg-basis">
         <option value="gross" ${match.sub.basis === 'gross' ? 'selected' : ''}>Gross (Total Invoice Sale Price)</option>
         <option value="net" ${match.sub.basis === 'net' ? 'selected' : ''}>Net (Amount Paid to Consignor)</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Who Receives the Auction House Check?</label>
+      <select id="cfg-receiver">
+        <option value="me" ${(match.sub.checkReceiver || 'me') === 'me' ? 'selected' : ''}>🏦 I receive the check — I send them their money</option>
+        <option value="them" ${match.sub.checkReceiver === 'them' ? 'selected' : ''}>👤 They receive the check — they send me my commission</option>
       </select>
     </div>
     <p style="font-size:0.8rem;color:var(--text2);font-family:sans-serif;margin-top:0.5rem;">
@@ -650,12 +775,15 @@ function openConfig(clientId, subNum) {
 function saveConfig() {
   const pct = parseFloat(document.getElementById('cfg-pct').value);
   const basis = document.getElementById('cfg-basis').value;
+  const checkReceiver = document.getElementById('cfg-receiver').value;
   if (isNaN(pct) || pct < 0 || pct > 100) { alert('Please enter a valid percentage.'); return; }
   const { clientId, subNum } = currentConfigTarget;
   const c = appData.clients.find(x => x.id === clientId);
   const s = c.subs.find(x => x.num == subNum);
+  s.label = document.getElementById('cfg-label').value.trim();
   s.pct = pct;
   s.basis = basis;
+  s.checkReceiver = checkReceiver;
   saveData();
   closeModal('config-modal');
   renderClients();
@@ -669,11 +797,19 @@ function addNewClient() {
   if (isNaN(num)) { alert('Please enter a consignor number.'); return; }
   if (findSubByNum(num)) { alert('That consignor number already exists.'); return; }
   const id = 'c' + Date.now();
-  appData.clients.push({ id, name, subs: [{ num, pct: null, basis: null }] });
+  const contact = {
+    personName: document.getElementById('new-client-person').value.trim(),
+    phone: document.getElementById('new-client-phone').value.trim(),
+    email: document.getElementById('new-client-email').value.trim()
+  };
+  appData.clients.push({ id, name, contact, subs: [{ num, pct: null, basis: null }] });
   saveData();
   closeModal('add-client-modal');
   document.getElementById('new-client-name').value = '';
   document.getElementById('new-client-num').value = '';
+  document.getElementById('new-client-person').value = '';
+  document.getElementById('new-client-phone').value = '';
+  document.getElementById('new-client-email').value = '';
   renderClients();
 }
 
@@ -720,7 +856,7 @@ function renderHistory() {
     return `<div class="invoice-row" style="cursor:pointer;" onclick="openInvoiceDetail('${inv.id}')">
       <div style="flex:1;">
         <div style="font-family:sans-serif;font-size:0.9rem;font-weight:500;">${name}</div>
-        <div class="invoice-date">#${inv.subNum} · ${inv.auctionDate || '?'} · <label class="toggle-paid" onclick="event.stopPropagation()"><input type="checkbox" ${inv.paid?'checked':''} onchange="togglePaid('${inv.id}',this.checked)" /> ${inv.paid?'Paid':'Unpaid'}</label></div>
+        <div class="invoice-date">#${inv.subNum} · ${inv.auctionDate || '?'} · <label class="toggle-paid" onclick="event.stopPropagation()"><input type="checkbox" ${inv.paid?'checked':''} onchange="togglePaid('${inv.id}',this.checked)" /> ${inv.paid ? ((inv.checkReceiver||'me')==='me'?'✅ Sent':'✅ Received') : ((inv.checkReceiver||'me')==='me'?'⏳ Pending':'⏳ They Owe Me')}</label></div>
       </div>
       <div class="invoice-amount ${inv.myCommission >= 0 ? 'owed-to-me' : 'i-owe'}">${fmtSigned(inv.myCommission)}</div>
     </div>`;
@@ -755,15 +891,19 @@ function openInvoiceDetail(invId) {
       <div class="result-line"><span>Net Payout</span><span>${fmt(inv.netPayout)}</span></div>
       <div class="result-line"><span>Commission Base</span><span>${inv.basis === 'gross' ? 'Gross' : 'Net'}</span></div>
       <div class="result-line"><span>Commission Rate</span><span>${inv.pct}%</span></div>
-      <div class="result-line total ${inv.myCommission < 0 ? 'negative' : ''}">
-        <span>${inv.myCommission >= 0 ? 'They Owe You' : 'You Owe Them'}</span>
-        <span class="amount">${fmtSigned(inv.myCommission)}</span>
+      <div class="result-line" style="padding-top:0.4rem;">
+        <span style="font-weight:600;">💰 Your Commission</span>
+        <span style="font-weight:600;color:var(--accent);">${fmt(inv.myCommission)}</span>
       </div>
+      ${(inv.checkReceiver || 'me') === 'me' ? 
+        '<div class="result-line total negative"><span>📤 Send To Client</span><span class="amount" style="color:var(--danger);">' + fmt(inv.netPayout - inv.myCommission) + '</span></div>' :
+        '<div class="result-line total"><span>💰 They Owe You Commission</span><span class="amount" style="color:var(--accent);">' + fmt(inv.myCommission) + '</span></div>'
+      }
     </div>
     <div style="margin-top:1rem;display:flex;align-items:center;gap:0.75rem;font-family:sans-serif;font-size:0.9rem;">
       <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
         <input type="checkbox" ${inv.paid?'checked':''} onchange="togglePaid('${inv.id}',this.checked);document.getElementById('invoice-modal-body').querySelector('input').checked=this.checked;" style="width:18px;height:18px;accent-color:var(--accent);" />
-        Mark as Paid
+        ${(inv.checkReceiver || 'me') === 'me' ? 'Mark as Sent (check sent to client)' : 'Mark as Received (they sent my commission)'}
       </label>
     </div>
     <div style="margin-top:1rem;">
@@ -790,11 +930,27 @@ document.querySelectorAll('.modal-overlay').forEach(m => {
 
 // ─── PDF PROCESSING ──────────────────────────────────────────────────
 function handleDrag(e) { e.preventDefault(); document.getElementById('upload-area').classList.add('drag'); }
+
+function handleAnyFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    processPDF(file);
+  } else {
+    processImage(file);
+  }
+}
 function handleDrop(e) {
   e.preventDefault();
   document.getElementById('upload-area').classList.remove('drag');
   const file = e.dataTransfer.files[0];
-  if (file) processPDF(file);
+  if (!file) return;
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    processPDF(file);
+  } else {
+    processImage(file);
+  }
 }
 function handleFileSelect(e) {
   const file = e.target.files[0];
@@ -1002,9 +1158,13 @@ function parseSettlement(tokens, el) {
       <div class="result-line"><span>Net Payout</span><span>${net !== null ? fmt(net) : '—'}</span></div>
       <div class="result-line"><span>Your Commission Base</span><span>${sub.basis === 'gross' ? 'Gross' : 'Net'} = ${fmt(base)}</span></div>
       <div class="result-line"><span>Rate</span><span>${sub.pct}%</span></div>
-      <div class="result-line total">
-        <span>${myCommission >= 0 ? '💰 They Owe You' : '↩️ You Owe Them'}</span>
-        <span class="amount">${fmtSigned(myCommission)}</span>
+      <div class="result-line" style="padding-top:0.6rem;">
+        <span style="font-weight:600;">💰 Your Commission</span>
+        <span style="font-weight:600;color:var(--accent);">${fmt(myCommission)}</span>
+      </div>
+      <div class="result-line total negative">
+        <span>📤 Send To Client</span>
+        <span class="amount" style="color:var(--danger);">${fmt(net - myCommission)}</span>
       </div>
     </div>
     <div style="display:flex;gap:0.6rem;margin-top:1rem;">
@@ -1014,12 +1174,15 @@ function parseSettlement(tokens, el) {
 }
 
 function saveInvoice(subNum, coNum, auctionDate, grossSale, netPayout, myCommission, basis, pct) {
+  const match = findSubByNum(subNum);
+  const checkReceiver = match ? (match.sub.checkReceiver || 'me') : 'me';
   const inv = {
     id: 'inv_' + Date.now(),
     subNum, coNum, auctionDate,
     grossSale: grossSale || 0,
     netPayout: netPayout || 0,
     myCommission, basis, pct,
+    checkReceiver,
     paid: false,
     uploadedAt: new Date().toISOString()
   };
@@ -1027,6 +1190,191 @@ function saveInvoice(subNum, coNum, auctionDate, grossSale, netPayout, myCommiss
   saveData();
   document.getElementById('upload-result').innerHTML = `<div class="alert alert-success" style="margin-top:1rem;">✅ Invoice saved! View it in History or Dashboard.</div>`;
   renderDashboard();
+}
+
+const API_KEY_STORE = 'auc_apikey';
+
+function saveApiKey() {
+  const key = document.getElementById('api-key-input').value.trim();
+  if (!key.startsWith('AIza')) {
+    document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-error">Invalid key format. Should start with AIza</div>';
+    return;
+  }
+  localStorage.setItem(API_KEY_STORE, key);
+  document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-success">✅ API key saved!</div>';
+  document.getElementById('api-key-input').value = '';
+  updateApiKeyStatus();
+  setTimeout(() => { document.getElementById('api-key-alert').innerHTML = ''; }, 3000);
+}
+
+function clearApiKey() {
+  localStorage.removeItem(API_KEY_STORE);
+  document.getElementById('api-key-input').value = '';
+  updateApiKeyStatus();
+  document.getElementById('api-key-alert').innerHTML = '<div class="alert alert-success">Key removed.</div>';
+  setTimeout(() => { document.getElementById('api-key-alert').innerHTML = ''; }, 2000);
+}
+
+function toggleShowKey() {
+  const input = document.getElementById('api-key-input');
+  input.type = input.type === 'password' ? 'text' : 'password';
+  const key = localStorage.getItem(API_KEY_STORE);
+  if (key && !input.value) input.value = key;
+}
+
+function updateApiKeyStatus() {
+  const el = document.getElementById('api-key-status');
+  if (!el) return;
+  const key = localStorage.getItem(API_KEY_STORE);
+  el.textContent = key ? '✅ Gemini API key is set — photo uploads enabled' : '⚠️ No Gemini key — photo uploads disabled';
+  el.style.color = key ? 'var(--accent)' : 'var(--warn)';
+}
+
+// Call on settings tab open
+const origShowTab = showTab;
+
+function handleImageSelect(e) {
+  const file = e.target.files[0];
+  if (file) processImage(file);
+  e.target.value = '';
+}
+
+async function processImage(file) {
+  const el = document.getElementById('upload-result');
+  const apiKey = localStorage.getItem(API_KEY_STORE);
+  if (!apiKey) {
+    el.innerHTML = '<div class="alert alert-error">No API key set. Please add your Google Gemini API key in Settings first.</div>';
+    return;
+  }
+  el.innerHTML = '<div class="processing"><div class="spinner"></div><p>Reading photo with AI...</p></div>';
+
+  try {
+    const base64 = await fileToBase64(file);
+    const mediaType = file.type || 'image/jpeg';
+
+    const prompt = 'You are a data extractor. Look at this auction settlement document and extract exactly these 5 values. Reply with RAW JSON only - no markdown, no code blocks, no explanation. Just the JSON object itself.\n\nExtract: consignorNum (integer), coNum (string), auctionDate (string MM/DD/YY), grossSale (number - labeled Total Invoice Sale Price), netPayout (number - labeled Total Due to Consignor or Balance).\n\nExample reply format:\n{"consignorNum":1360,"coNum":"56062","auctionDate":"04/17/25","grossSale":2044.00,"netPayout":1573.88}';
+
+    const response = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { inline_data: { mime_type: mediaType, data: base64 } },
+              { text: prompt }
+            ]
+          }],
+          generationConfig: { temperature: 0, maxOutputTokens: 1024 }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'Gemini API error');
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!text) throw new Error('Empty response from Gemini');
+
+    // Strip markdown code blocks if present
+    const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Could not parse AI response: ' + text);
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    parseSettlementData(parsed.consignorNum, parsed.coNum, parsed.auctionDate, parsed.grossSale, parsed.netPayout, el);
+  } catch(err) {
+    el.innerHTML = '<div class="alert alert-error">Error reading image: ' + err.message + '</div>';
+  }
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function parseSettlementData(subNum, coNum, auctionDate, gross, net, el) {
+  if (!subNum) {
+    el.innerHTML = '<div class="alert alert-error">Could not find Consignor number in this document.</div>';
+    return;
+  }
+  const match = findSubByNum(subNum);
+  if (!match) {
+    el.innerHTML = `<div class="alert alert-error">Consignor #${subNum} is not in your client list. Please add them first.</div>`;
+    return;
+  }
+  const { client, sub } = match;
+  if (sub.pct === null || sub.basis === null) {
+    el.innerHTML = `<div class="alert alert-error">Consignor #${subNum} (${client.name}) is not configured yet.
+      <button class="btn-sm primary" style="margin-left:0.5rem;" onclick="openConfig('${client.id}',${subNum});document.getElementById('upload-result').innerHTML='';">Configure Now</button>
+    </div>`;
+    return;
+  }
+  const base = sub.basis === 'gross' ? gross : net;
+  if (!base) {
+    el.innerHTML = `<div class="alert alert-error">Could not extract the ${sub.basis === 'gross' ? 'gross sale' : 'net payout'} amount.</div>`;
+    return;
+  }
+  const myCommission = parseFloat(((sub.pct / 100) * base).toFixed(2));
+  const sendToClient = parseFloat((net - myCommission).toFixed(2));
+  const checkReceiver = sub.checkReceiver || 'me';
+
+  el.innerHTML = `
+    <div class="alert alert-success" style="margin-top:1rem;">✅ Found: ${client.name} — Consignor #${subNum}${sub.label ? ' (' + sub.label + ')' : ''}</div>
+    <div class="result-card owes-me">
+      <div class="result-line"><span>Client</span><span>${client.name}${sub.label ? ' — ' + sub.label : ''}</span></div>
+      <div class="result-line"><span>Consignor #</span><span>${subNum}</span></div>
+      <div class="result-line"><span>CO #</span><span>${coNum || '—'}</span></div>
+      <div class="result-line"><span>Auction Date</span><span>${auctionDate || '—'}</span></div>
+      <div class="result-line"><span>Gross Sale</span><span>${gross !== null ? fmt(gross) : '—'}</span></div>
+      <div class="result-line"><span>Net Payout</span><span>${net !== null ? fmt(net) : '—'}</span></div>
+      <div class="result-line"><span>Commission Base</span><span>${sub.basis === 'gross' ? 'Gross' : 'Net'} = ${fmt(base)}</span></div>
+      <div class="result-line"><span>Rate</span><span>${sub.pct}%</span></div>
+      <div class="result-line" style="padding-top:0.4rem;">
+        <span style="font-weight:600;">💰 Your Commission</span>
+        <span style="font-weight:600;color:var(--accent);">${fmt(myCommission)}</span>
+      </div>
+      ${checkReceiver === 'me'
+        ? '<div class="result-line total negative"><span>📤 Send To Client</span><span class="amount" style="color:var(--danger);">' + fmt(sendToClient) + '</span></div>'
+        : '<div class="result-line total"><span>💰 They Owe You Commission</span><span class="amount" style="color:var(--accent);">' + fmt(myCommission) + '</span></div>'
+      }
+    </div>
+    <div style="display:flex;gap:0.6rem;margin-top:1rem;">
+      <button class="btn-sm primary" onclick="saveInvoice(${subNum},'${coNum}','${auctionDate}',${gross},${net},${myCommission},'${sub.basis}',${sub.pct})">💾 Save Invoice</button>
+      <button class="btn-sm" onclick="document.getElementById('upload-result').innerHTML='';">Clear</button>
+    </div>`;
+}
+
+let currentEditContactId = null;
+
+function openEditContact(clientId) {
+  currentEditContactId = clientId;
+  const c = appData.clients.find(x => x.id === clientId);
+  if (!c.contact) c.contact = {personName:'',phone:'',email:''};
+  document.getElementById('edit-contact-title').textContent = c.name + ' — Contact Info';
+  document.getElementById('edit-contact-person').value = c.contact.personName || '';
+  document.getElementById('edit-contact-phone').value = c.contact.phone || '';
+  document.getElementById('edit-contact-email').value = c.contact.email || '';
+  openModal('edit-contact-modal');
+}
+
+function saveContact() {
+  const c = appData.clients.find(x => x.id === currentEditContactId);
+  if (!c.contact) c.contact = {};
+  c.contact.personName = document.getElementById('edit-contact-person').value.trim();
+  c.contact.phone = document.getElementById('edit-contact-phone').value.trim();
+  c.contact.email = document.getElementById('edit-contact-email').value.trim();
+  saveData();
+  closeModal('edit-contact-modal');
+  renderClients();
 }
 
 function changePassword() {
@@ -1056,7 +1404,7 @@ function changePassword() {
 }
 </script>
   <footer style="text-align:center;padding:1.5rem;font-family:sans-serif;font-size:0.78rem;color:var(--text3);">
-     Built by Hirschprung Digital © 2026
+    Built by Hirschprung Digital © 2026
   </footer>
 </body>
 </html>
