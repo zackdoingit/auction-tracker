@@ -600,9 +600,13 @@ async function doLogout() {
 
 async function enterApp() {
   showScreen('app');
+  // Small delay to ensure auth session is fully established
+  await new Promise(r => setTimeout(r, 500));
   await loadData();
   if (appClients.length === 0) {
     await seedDefaultClients();
+    // Wait a moment then reload
+    await new Promise(r => setTimeout(r, 500));
     const { data: fresh } = await sbClient.from('clients').select('*').order('name');
     appClients = fresh || [];
   }
@@ -622,22 +626,54 @@ async function loadData() {
 
 async function forceSeed() {
   if (!confirm('Load all 60 default clients? This will not delete any existing clients.')) return;
-  await seedDefaultClients();
-  const { data: fresh } = await sbClient.from('clients').select('*').order('name');
-  appClients = fresh || [];
-  renderClients();
-  renderDashboard();
-  alert('✅ ' + appClients.length + ' clients loaded!');
+  try {
+    // Test connection first
+    const { data: test, error: testErr } = await sbClient.from('clients').select('count').limit(1);
+    if (testErr) { alert('Connection error: ' + testErr.message); return; }
+    
+    // Insert one by one to identify any issues
+    let loaded = 0;
+    for (const c of DEFAULT_CLIENTS) {
+      const { error } = await sbClient.from('clients').insert({
+        user_id: currentUser.id,
+        name: c.name,
+        subs: c.subs,
+        contacts: []
+      });
+      if (error) {
+        console.error('Error inserting ' + c.name + ':', error.message);
+      } else {
+        loaded++;
+      }
+    }
+    const { data: fresh } = await sbClient.from('clients').select('*').order('name');
+    appClients = fresh || [];
+    renderClients();
+    renderDashboard();
+    alert('✅ ' + loaded + ' clients loaded! Total in DB: ' + appClients.length);
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
 }
 
 async function seedDefaultClients() {
-  const rows = DEFAULT_CLIENTS.map(c => ({
-    user_id: currentUser.id,
-    name: c.name,
-    subs: c.subs,
-    contacts: []
-  }));
-  await sbClient.from('clients').insert(rows);
+  try {
+    // Insert in batches of 10 to avoid timeout
+    const rows = DEFAULT_CLIENTS.map(c => ({
+      user_id: currentUser.id,
+      name: c.name,
+      subs: c.subs,
+      contacts: []
+    }));
+    const batchSize = 10;
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      const { error } = await sbClient.from('clients').insert(batch);
+      if (error) console.error('Seed batch error:', error.message);
+    }
+  } catch(e) {
+    console.error('Seed error:', e);
+  }
 }
 
 // ─── HELPERS ──────────────────────────────────────────────────────────
